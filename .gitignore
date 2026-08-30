@@ -1,0 +1,45 @@
+# --- Godot ---
+.godot/
+/android/
+*.translation
+
+# --- Exports / build output ---
+exports/
+build/
+*.apk
+*.aab
+*.idsig
+
+# --- Signing material: NEVER commit ---
+*.keystore
+*.jks
+*.p12
+*.pem
+export_presets.cfg
+keystore.properties
+
+# --- Environment ---
+.env
+.env.*
+
+# --- Audio masters (kept outside version control, see PLAN.md §10.1) ---
+assets/audio/**/masters/
+*.wav
+
+# --- OS / editor cruft ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Third-party art whose licence has not been established. PLAN.md 11 allows CC0
+# only and requires the source and licence in ASSETS.md before commit; this app
+# also ships under the Play Families policy, where an unanswerable provenance
+# question is a release blocker rather than a footnote. Ignored so it cannot be
+# committed by accident while the question is open — the importer that builds it
+# is committed, so nothing is lost.
+assets/models/shop/gondola.glb
+assets/models/shop/gondola.glb.import

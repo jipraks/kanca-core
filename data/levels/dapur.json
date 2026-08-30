@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "_note": "Dapur recipes (PLAN.md 8.3). The learning goal is sequencing, so step order is the content. Each step names what the child drags and where it goes; targets are markers in the kitchen scene. Structure is provisional until P4 builds the mini-game.",
+  "levels": [
+    {
+      "index": 1,
+      "dishes_per_session": 2,
+      "dish_pool": ["es_teh", "roti_bakar"],
+      "coins_per_dish": 3,
+      "intro_voice_id": "kanca_dapur_intro_1"
+    },
+    {
+      "index": 2,
+      "dishes_per_session": 2,
+      "dish_pool": ["roti_bakar", "nasi_goreng"],
+      "coins_per_dish": 4,
+      "intro_voice_id": "kanca_dapur_intro_1"
+    },
+    {
+      "index": 3,
+      "dishes_per_session": 3,
+      "dish_pool": ["es_teh", "roti_bakar", "nasi_goreng", "sate"],
+      "coins_per_dish": 5,
+      "intro_voice_id": "kanca_dapur_intro_1"
+    }
+  ],
+  "dishes": {
+    "es_teh": {
+      "display_name": "Es Teh",
+      "icon": "res://assets/ui/dishes/es_teh.png",
+      "steps": [
+        {"item": "air_mineral", "target": "gelas", "icon": "res://assets/ui/steps/tuang_air.png"},
+        {"item": "gula", "target": "gelas", "icon": "res://assets/ui/steps/tambah_gula.png"},
+        {"item": "es_batu", "target": "gelas", "icon": "res://assets/ui/steps/tambah_es.png"}
+      ]
+    },
+    "roti_bakar": {
+      "display_name": "Roti Bakar",
+      "icon": "res://assets/ui/dishes/roti_bakar.png",
+      "steps": [
+        {"item": "roti", "target": "panggangan", "icon": "res://assets/ui/steps/taruh_roti.png"},
+        {"item": "mentega", "target": "panggangan", "icon": "res://assets/ui/steps/oles_mentega.png"},
+        {"item": "piring", "target": "meja", "icon": "res://assets/ui/steps/sajikan.png"}
+      ]
+    },
+    "nasi_goreng": {
+      "display_name": "Nasi Goreng",
+      "icon": "res://assets/ui/dishes/nasi_goreng.png",
+      "steps": [
+        {"item": "minyak", "target": "wajan", "icon": "res://assets/ui/steps/tuang_minyak.png"},
+        {"item": "telur", "target": "wajan", "icon": "res://assets/ui/steps/pecah_telur.png"},
+        {"item": "beras", "target": "wajan", "icon": "res://assets/ui/steps/masukkan_nasi.png"},
+        {"item": "spatula", "target": "wajan", "icon": "res://assets/ui/steps/aduk.png"},
+        {"item": "piring", "target": "meja", "icon": "res://assets/ui/steps/sajikan.png"}
+      ]
+    },
+    "sate": {
+      "display_name": "Sate",
+      "icon": "res://assets/ui/dishes/sate.png",
+      "steps": [
+        {"item": "daging", "target": "tusuk", "icon": "res://assets/ui/steps/tusuk_daging.png"},
+        {"item": "kecap", "target": "tusuk", "icon": "res://assets/ui/steps/oles_kecap.png"},
+        {"item": "tusuk", "target": "panggangan", "icon": "res://assets/ui/steps/panggang.png"},
+        {"item": "piring", "target": "meja", "icon": "res://assets/ui/steps/sajikan.png"}
+      ]
+    }
+  }
+}

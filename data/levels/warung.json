@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "_note": "Warung level progression (PLAN.md 8.1). Levels 4-5 introduce money and change; they are unvalidated with 4-6 year olds and are stretch scope (16.5), so ContentDB.MAX_PLAYABLE_LEVEL keeps them out of a child's reach until they are built and tested. shelf_item_types is how many distinct types sit on the shelf, including distractors - it is the real difficulty dial.",
+  "customers": [
+    {
+      "id": "anak",
+      "voice_prefix": "cust_anak",
+      "colour": "f28b82",
+      "height": 0.95
+    },
+    {
+      "id": "ibu",
+      "voice_prefix": "cust_ibu",
+      "colour": "b39ddb",
+      "height": 1.32
+    },
+    {
+      "id": "bapak",
+      "voice_prefix": "cust_bapak",
+      "colour": "80cbc4",
+      "height": 1.42
+    }
+  ],
+  "levels": [
+    {
+      "index": 1,
+      "customers_per_session": 5,
+      "item_types_per_order": 1,
+      "quantity_range": [1, 3],
+      "shelf_item_types": 3,
+      "item_pool": ["pisang", "apel", "telur", "roti"],
+      "money_enabled": false,
+      "coins_per_customer": 2,
+      "hint_after_attempts": 3,
+      "intro_voice_id": "kanca_warung_intro_1"
+    },
+    {
+      "index": 2,
+      "customers_per_session": 5,
+      "item_types_per_order": 1,
+      "quantity_range": [1, 5],
+      "shelf_item_types": 4,
+      "item_pool": ["pisang", "apel", "jeruk", "telur", "roti", "susu"],
+      "money_enabled": false,
+      "coins_per_customer": 3,
+      "hint_after_attempts": 3,
+      "intro_voice_id": "kanca_warung_intro_2"
+    },
+    {
+      "index": 3,
+      "customers_per_session": 5,
+      "item_types_per_order": 2,
+      "quantity_range": [1, 3],
+      "shelf_item_types": 5,
+      "item_pool": ["pisang", "apel", "jeruk", "telur", "roti", "susu", "permen", "biskuit"],
+      "money_enabled": false,
+      "coins_per_customer": 4,
+      "hint_after_attempts": 3,
+      "intro_voice_id": "kanca_warung_intro_3"
+    },
+    {
+      "index": 4,
+      "customers_per_session": 5,
+      "item_types_per_order": 2,
+      "quantity_range": [1, 3],
+      "shelf_item_types": 5,
+      "item_pool": ["pisang", "apel", "jeruk", "telur", "roti", "susu", "permen", "biskuit", "air_mineral"],
+      "money_enabled": true,
+      "money_mode": "exact_payment",
+      "coins_per_customer": 4,
+      "hint_after_attempts": 3,
+      "intro_voice_id": ""
+    },
+    {
+      "index": 5,
+      "customers_per_session": 5,
+      "item_types_per_order": 2,
+      "quantity_range": [1, 4],
+      "shelf_item_types": 6,
+      "item_pool": ["pisang", "apel", "jeruk", "telur", "roti", "susu", "permen", "biskuit", "air_mineral", "mie_instan"],
+      "money_enabled": true,
+      "money_mode": "simple_change",
+      "coins_per_customer": 5,
+      "hint_after_attempts": 3,
+      "intro_voice_id": ""
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/minigames/warung/warung.gd" id="1_warung"]
+[ext_resource type="Script" path="res://scripts/minigames/warung/counter_tray.gd" id="2_tray"]
+[ext_resource type="Script" path="res://scripts/core/drag_controller.gd" id="3_drag"]
+[ext_resource type="PackedScene" path="res://scenes/ui/safe_area_margin.tscn" id="4_safearea"]
+[ext_resource type="PackedScene" path="res://scenes/ui/home_button.tscn" id="5_home"]
+[ext_resource type="PackedScene" path="res://scenes/ui/order_card.tscn" id="6_ordercard"]
+[ext_resource type="PackedScene" path="res://scenes/ui/big_button.tscn" id="7_bigbutton"]
+[ext_resource type="PackedScene" path="res://scenes/ui/coin_display.tscn" id="8_coins"]
+
+[node name="Warung" type="Node3D"]
+script = ExtResource("1_warung")
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2.7, 3.8)
+current = true
+fov = 55.0
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.642788, 0.766044, 0, -0.766044, 0.642788, 0, 6, 4)
+light_energy = 0.82
+shadow_enabled = false
+
+[node name="Counter" type="Node3D" parent="."]
+
+[node name="Tray" type="Node3D" parent="Counter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.25)
+script = ExtResource("2_tray")
+
+[node name="Shelf" type="Node3D" parent="."]
+
+[node name="CustomerRoot" type="Node3D" parent="."]
+
+[node name="DragController" type="Node3D" parent="."]
+script = ExtResource("3_drag")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="SafeArea" parent="UI" instance=ExtResource("4_safearea")]
+
+[node name="Screen" type="Control" parent="UI/SafeArea"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HomeButton" parent="UI/SafeArea/Screen" instance=ExtResource("5_home")]
+layout_mode = 1
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_right = 120.0
+offset_bottom = 120.0
+grow_horizontal = 1
+grow_vertical = 1
+
+[node name="OrderCard" parent="UI/SafeArea/Screen" instance=ExtResource("6_ordercard")]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -286.0
+offset_top = 104.0
+offset_bottom = 306.0
+grow_horizontal = 0
+grow_vertical = 1
+
+[node name="CoinDisplay" parent="UI/SafeArea/Screen" instance=ExtResource("8_coins")]
+follow_game_state = false
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -280.0
+offset_bottom = 90.0
+grow_horizontal = 0
+grow_vertical = 1
+
+[node name="ConfirmButton" parent="UI/SafeArea/Screen" instance=ExtResource("7_bigbutton")]
+custom_minimum_size = Vector2(152, 152)
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -152.0
+offset_top = -152.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 0
+grow_vertical = 0

@@ -1,0 +1,101 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/hub/hub.gd" id="1_hub"]
+[ext_resource type="Script" path="res://scripts/hub/hub_player.gd" id="2_player"]
+[ext_resource type="Script" path="res://scripts/hub/hub_camera.gd" id="3_camera"]
+[ext_resource type="Script" path="res://scripts/hub/mascot_companion.gd" id="4_kanca"]
+[ext_resource type="PackedScene" path="res://scenes/ui/safe_area_margin.tscn" id="5_safearea"]
+[ext_resource type="PackedScene" path="res://scenes/ui/analog_stick.tscn" id="6_pad"]
+[ext_resource type="PackedScene" path="res://scenes/ui/coin_display.tscn" id="7_coins"]
+[ext_resource type="PackedScene" path="res://scenes/ui/celebration_overlay.tscn" id="8_celebration"]
+[ext_resource type="PackedScene" path="res://scenes/ui/big_button.tscn" id="9_bigbutton"]
+[ext_resource type="PackedScene" path="res://scenes/ui/zoom_controls.tscn" id="10_zoom"]
+[ext_resource type="PackedScene" path="res://scenes/ui/camera_gestures.tscn" id="11_gestures"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.32
+height = 1.1
+
+[node name="Hub" type="Node3D"]
+script = ExtResource("1_hub")
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.766044, -0.492404, 0.413176, 0, 0.642788, 0.766044, -0.642788, -0.586824, 0.492404, 0, 14, 0)
+light_color = Color(1, 0.968627, 0.898039, 1)
+light_energy = 0.9
+shadow_enabled = true
+directional_shadow_max_distance = 45.0
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 4)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("2_player")
+
+[node name="Collision" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 7.457, 14.649)
+fov = 55.0
+script = ExtResource("3_camera")
+
+[node name="Kanca" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0, 4.6)
+script = ExtResource("4_kanca")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="SafeArea" parent="UI" instance=ExtResource("5_safearea")]
+
+[node name="Screen" type="Control" parent="UI/SafeArea"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Gestures" parent="UI/SafeArea/Screen" instance=ExtResource("11_gestures")]
+
+[node name="Pad" parent="UI/SafeArea/Screen" instance=ExtResource("6_pad")]
+layout_mode = 1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -340.0
+offset_right = 300.0
+grow_horizontal = 1
+grow_vertical = 0
+
+[node name="CoinDisplay" parent="UI/SafeArea/Screen" instance=ExtResource("7_coins")]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -280.0
+offset_bottom = 90.0
+grow_horizontal = 0
+grow_vertical = 1
+
+[node name="Zoom" parent="UI/SafeArea/Screen" instance=ExtResource("10_zoom")]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 180.0
+offset_right = 0.0
+offset_bottom = 460.0
+grow_horizontal = 0
+
+[node name="EnterPrompt" parent="UI/SafeArea/Screen" instance=ExtResource("9_bigbutton")]
+custom_minimum_size = Vector2(164, 164)
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -164.0
+offset_top = -164.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Celebration" parent="UI" instance=ExtResource("8_celebration")]

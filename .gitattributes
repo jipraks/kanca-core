@@ -1,0 +1,39 @@
+# Normalise line endings for text.
+*                   text=auto eol=lf
+*.gd                text eol=lf
+*.tscn              text eol=lf
+*.tres              text eol=lf
+*.json              text eol=lf
+*.md                text eol=lf
+*.cfg               text eol=lf
+*.godot             text eol=lf
+
+# --- Git LFS ---
+# Configured from the first commit on purpose. Retrofitting LFS later
+# requires rewriting history (PLAN.md §5.1).
+
+# Models
+*.glb               filter=lfs diff=lfs merge=lfs -text
+*.gltf              filter=lfs diff=lfs merge=lfs -text
+*.blend             filter=lfs diff=lfs merge=lfs -text
+*.fbx               filter=lfs diff=lfs merge=lfs -text
+*.obj               filter=lfs diff=lfs merge=lfs -text
+
+# Textures
+*.png               filter=lfs diff=lfs merge=lfs -text
+*.jpg               filter=lfs diff=lfs merge=lfs -text
+*.jpeg              filter=lfs diff=lfs merge=lfs -text
+*.webp              filter=lfs diff=lfs merge=lfs -text
+*.ktx               filter=lfs diff=lfs merge=lfs -text
+*.exr               filter=lfs diff=lfs merge=lfs -text
+
+# Audio
+*.ogg               filter=lfs diff=lfs merge=lfs -text
+*.mp3               filter=lfs diff=lfs merge=lfs -text
+
+# Fonts
+*.ttf               filter=lfs diff=lfs merge=lfs -text
+*.otf               filter=lfs diff=lfs merge=lfs -text
+
+# SVG stays as text so icon changes stay reviewable in diffs.
+*.svg               text eol=lf

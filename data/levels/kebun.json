@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "_note": "Kebun level progression (PLAN.md 8.2). Growth is 6 seconds total across 3 visible stages and must never be longer - a child does not wait (3.4). Structure is provisional until P4 builds the mini-game.",
+  "levels": [
+    {
+      "index": 1,
+      "plots": 6,
+      "seed_pool": ["pisang"],
+      "match_seed_to_plot": false,
+      "grow_seconds": 6.0,
+      "grow_stages": 3,
+      "harvest_per_plot": 1,
+      "coins_per_session": 3,
+      "intro_voice_id": "kanca_kebun_intro_1"
+    },
+    {
+      "index": 2,
+      "plots": 6,
+      "seed_pool": ["pisang", "apel"],
+      "match_seed_to_plot": false,
+      "grow_seconds": 6.0,
+      "grow_stages": 3,
+      "harvest_per_plot": 1,
+      "coins_per_session": 4,
+      "intro_voice_id": "kanca_kebun_intro_1"
+    },
+    {
+      "index": 3,
+      "plots": 6,
+      "seed_pool": ["pisang", "apel", "jeruk"],
+      "match_seed_to_plot": true,
+      "grow_seconds": 6.0,
+      "grow_stages": 3,
+      "harvest_per_plot": 1,
+      "coins_per_session": 5,
+      "intro_voice_id": "kanca_kebun_intro_1"
+    }
+  ]
+}

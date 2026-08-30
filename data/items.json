@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "_note": "The 15 v1.0 items (PLAN.md 8.1). Adding an item here is all it takes - no code change. Model and icon paths point at where the real asset will live; until the file exists, PlaceholderFactory generates a stand-in. Prices are rupiah and only matter to the Dapur shop and to Warung levels 4-5.",
+  "items": {
+    "pisang": {
+      "display_name": "Pisang",
+      "model": "res://assets/models/items/pisang.glb",
+      "icon": "res://assets/ui/items/pisang.png",
+      "voice_id": "item_pisang",
+      "category": "buah",
+      "growable": true,
+      "grow_stages": 3,
+      "price": 2000
+    },
+    "apel": {
+      "display_name": "Apel",
+      "model": "res://assets/models/items/apel.glb",
+      "icon": "res://assets/ui/items/apel.png",
+      "voice_id": "item_apel",
+      "category": "buah",
+      "growable": true,
+      "grow_stages": 3,
+      "price": 3000
+    },
+    "jeruk": {
+      "display_name": "Jeruk",
+      "model": "res://assets/models/items/jeruk.glb",
+      "icon": "res://assets/ui/items/jeruk.png",
+      "voice_id": "item_jeruk",
+      "category": "buah",
+      "growable": true,
+      "grow_stages": 3,
+      "price": 3000
+    },
+    "telur": {
+      "display_name": "Telur",
+      "model": "res://assets/models/items/telur.glb",
+      "icon": "res://assets/ui/items/telur.png",
+      "voice_id": "item_telur",
+      "category": "protein",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 2500
+    },
+    "roti": {
+      "display_name": "Roti",
+      "model": "res://assets/models/items/roti.glb",
+      "icon": "res://assets/ui/items/roti.png",
+      "voice_id": "item_roti",
+      "category": "makanan",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 5000
+    },
+    "susu": {
+      "display_name": "Susu",
+      "model": "res://assets/models/items/susu.glb",
+      "icon": "res://assets/ui/items/susu.png",
+      "voice_id": "item_susu",
+      "category": "minuman",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 6000
+    },
+    "permen": {
+      "display_name": "Permen",
+      "model": "res://assets/models/items/permen.glb",
+      "icon": "res://assets/ui/items/permen.png",
+      "voice_id": "item_permen",
+      "category": "camilan",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 1000
+    },
+    "biskuit": {
+      "display_name": "Biskuit",
+      "model": "res://assets/models/items/biskuit.glb",
+      "icon": "res://assets/ui/items/biskuit.png",
+      "voice_id": "item_biskuit",
+      "category": "camilan",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 4000
+    },
+    "air_mineral": {
+      "display_name": "Air Mineral",
+      "model": "res://assets/models/items/air_mineral.glb",
+      "icon": "res://assets/ui/items/air_mineral.png",
+      "voice_id": "item_air_mineral",
+      "category": "minuman",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 3000
+    },
+    "mie_instan": {
+      "display_name": "Mi Instan",
+      "model": "res://assets/models/items/mie_instan.glb",
+      "icon": "res://assets/ui/items/mie_instan.png",
+      "voice_id": "item_mie_instan",
+      "category": "makanan",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 3500
+    },
+    "gula": {
+      "display_name": "Gula",
+      "model": "res://assets/models/items/gula.glb",
+      "icon": "res://assets/ui/items/gula.png",
+      "voice_id": "item_gula",
+      "category": "sembako",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 15000
+    },
+    "minyak": {
+      "display_name": "Minyak Goreng",
+      "model": "res://assets/models/items/minyak.glb",
+      "icon": "res://assets/ui/items/minyak.png",
+      "voice_id": "item_minyak",
+      "category": "sembako",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 20000
+    },
+    "sabun": {
+      "display_name": "Sabun",
+      "model": "res://assets/models/items/sabun.glb",
+      "icon": "res://assets/ui/items/sabun.png",
+      "voice_id": "item_sabun",
+      "category": "kebersihan",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 5000
+    },
+    "beras": {
+      "display_name": "Beras",
+      "model": "res://assets/models/items/beras.glb",
+      "icon": "res://assets/ui/items/beras.png",
+      "voice_id": "item_beras",
+      "category": "sembako",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 12000
+    },
+    "es_krim": {
+      "display_name": "Es Krim",
+      "model": "res://assets/models/items/es_krim.glb",
+      "icon": "res://assets/ui/items/es_krim.png",
+      "voice_id": "item_es_krim",
+      "category": "camilan",
+      "growable": false,
+      "grow_stages": 0,
+      "price": 8000
+    }
+  }
+}

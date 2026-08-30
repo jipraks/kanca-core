@@ -1,0 +1,558 @@
+{
+  "version": 1,
+  "_note": "Source of truth for every spoken line. VoiceBank reads only this file and never scans the filesystem. See PLAN.md section 10.",
+  "voices": {
+    "kanca_welcome": {
+      "speaker": "kanca",
+      "category": "hub",
+      "base": "res://assets/audio/voice/kanca/kanca_welcome",
+      "variants": 2,
+      "duration": 1.8,
+      "text": "Halo! Selamat datang di Kampung Kanca!"
+    },
+    "kanca_hub_idle": {
+      "speaker": "kanca",
+      "category": "hub",
+      "base": "res://assets/audio/voice/kanca/kanca_hub_idle",
+      "variants": 4,
+      "duration": 1.6,
+      "text": "Mau main apa hari ini?"
+    },
+    "kanca_hub_point": {
+      "speaker": "kanca",
+      "category": "hub",
+      "base": "res://assets/audio/voice/kanca/kanca_hub_point",
+      "variants": 2,
+      "duration": 1.7,
+      "text": "Coba ke sana yuk!"
+    },
+    "kanca_locked": {
+      "speaker": "kanca",
+      "category": "hub",
+      "base": "res://assets/audio/voice/kanca/kanca_locked",
+      "variants": 2,
+      "duration": 1.9,
+      "text": "Yang itu belum siap. Kita main yang lain dulu ya!"
+    },
+    "kanca_enter_building": {
+      "speaker": "kanca",
+      "category": "hub",
+      "base": "res://assets/audio/voice/kanca/kanca_enter_building",
+      "variants": 2,
+      "duration": 1.3,
+      "text": "Ayo masuk!"
+    },
+    "kanca_warung_intro_1": {
+      "speaker": "kanca",
+      "category": "warung",
+      "base": "res://assets/audio/voice/kanca/kanca_warung_intro_1",
+      "variants": 1,
+      "duration": 4.2,
+      "text": "Ini warung kita! Ada yang mau belanja. Dengarkan pesanannya, lalu ambil barangnya ya."
+    },
+    "kanca_warung_intro_2": {
+      "speaker": "kanca",
+      "category": "warung",
+      "base": "res://assets/audio/voice/kanca/kanca_warung_intro_2",
+      "variants": 1,
+      "duration": 3.6,
+      "text": "Sekarang pesanannya lebih banyak. Hitung pelan-pelan ya!"
+    },
+    "kanca_warung_intro_3": {
+      "speaker": "kanca",
+      "category": "warung",
+      "base": "res://assets/audio/voice/kanca/kanca_warung_intro_3",
+      "variants": 1,
+      "duration": 3.8,
+      "text": "Kali ini ada dua macam barang. Ambil satu-satu ya!"
+    },
+    "kanca_kebun_intro_1": {
+      "speaker": "kanca",
+      "category": "kebun",
+      "base": "res://assets/audio/voice/kanca/kanca_kebun_intro_1",
+      "variants": 1,
+      "duration": 4.0,
+      "text": "Ini kebun kita! Tanam benihnya, siram airnya, lalu tunggu tumbuh."
+    },
+    "kanca_kebun_tanam": {
+      "speaker": "kanca",
+      "category": "kebun",
+      "base": "res://assets/audio/voice/kanca/kanca_kebun_tanam",
+      "variants": 2,
+      "duration": 2.2,
+      "text": "Tanam benihnya dulu di petak ya."
+    },
+    "kanca_kebun_siram": {
+      "speaker": "kanca",
+      "category": "kebun",
+      "base": "res://assets/audio/voice/kanca/kanca_kebun_siram",
+      "variants": 2,
+      "duration": 2.1,
+      "text": "Sekarang siram dengan air!"
+    },
+    "kanca_kebun_panen": {
+      "speaker": "kanca",
+      "category": "kebun",
+      "base": "res://assets/audio/voice/kanca/kanca_kebun_panen",
+      "variants": 2,
+      "duration": 2.0,
+      "text": "Sudah besar! Ayo petik!"
+    },
+    "kanca_kebun_air": {
+      "speaker": "kanca",
+      "category": "kebun",
+      "base": "res://assets/audio/voice/kanca/kanca_kebun_air",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "air"
+    },
+    "kanca_dapur_intro_1": {
+      "speaker": "kanca",
+      "category": "dapur",
+      "base": "res://assets/audio/voice/kanca/kanca_dapur_intro_1",
+      "variants": 1,
+      "duration": 4.0,
+      "text": "Ayo masak! Ikuti langkahnya satu per satu dari kiri ke kanan."
+    },
+    "kanca_ui_benar": {
+      "speaker": "kanca",
+      "category": "feedback",
+      "base": "res://assets/audio/voice/kanca/kanca_ui_benar",
+      "variants": 3,
+      "duration": 1.4,
+      "text": "Hebat! Benar sekali!"
+    },
+    "kanca_ui_coba_lagi": {
+      "speaker": "kanca",
+      "category": "feedback",
+      "base": "res://assets/audio/voice/kanca/kanca_ui_coba_lagi",
+      "variants": 3,
+      "duration": 1.9,
+      "text": "Hmm, coba lihat kartunya lagi ya."
+    },
+    "kanca_ui_belum_waktunya": {
+      "speaker": "kanca",
+      "category": "feedback",
+      "base": "res://assets/audio/voice/kanca/kanca_ui_belum_waktunya",
+      "variants": 3,
+      "duration": 1.8,
+      "text": "Belum waktunya. Yang ini dulu ya!"
+    },
+    "kanca_celebrate": {
+      "speaker": "kanca",
+      "category": "feedback",
+      "base": "res://assets/audio/voice/kanca/kanca_celebrate",
+      "variants": 3,
+      "duration": 2.2,
+      "text": "Yeay! Kamu hebat sekali hari ini!"
+    },
+    "kanca_hint_dengar": {
+      "speaker": "kanca",
+      "category": "hint",
+      "base": "res://assets/audio/voice/kanca/kanca_hint_dengar",
+      "variants": 1,
+      "duration": 2.4,
+      "text": "Coba dengarkan lagi. Tekan kartunya ya."
+    },
+    "kanca_hint_hitung": {
+      "speaker": "kanca",
+      "category": "hint",
+      "base": "res://assets/audio/voice/kanca/kanca_hint_hitung",
+      "variants": 1,
+      "duration": 2.3,
+      "text": "Ayo hitung titiknya bersama Kanca."
+    },
+    "kanca_hint_lihat": {
+      "speaker": "kanca",
+      "category": "hint",
+      "base": "res://assets/audio/voice/kanca/kanca_hint_lihat",
+      "variants": 1,
+      "duration": 2.5,
+      "text": "Lihat, yang bersinar itu yang kita cari!"
+    },
+    "kanca_ambil_item": {
+      "speaker": "kanca",
+      "category": "warung",
+      "base": "res://assets/audio/voice/kanca/kanca_ambil_item",
+      "variants": 2,
+      "duration": 1.2,
+      "text": "Ambil satu ya!"
+    },
+    "kanca_kembali": {
+      "speaker": "kanca",
+      "category": "hub",
+      "base": "res://assets/audio/voice/kanca/kanca_kembali",
+      "variants": 2,
+      "duration": 1.3,
+      "text": "Sampai jumpa lagi!"
+    },
+    "cust_anak_greet": {
+      "speaker": "customer_anak",
+      "category": "customer_greeting",
+      "base": "res://assets/audio/voice/customer/cust_anak_greet",
+      "variants": 2,
+      "duration": 1.1,
+      "text": "Halo!"
+    },
+    "cust_anak_open": {
+      "speaker": "customer_anak",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_anak_open",
+      "variants": 3,
+      "duration": 1.6,
+      "text": "Saya mau beli"
+    },
+    "cust_anak_close": {
+      "speaker": "customer_anak",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_anak_close",
+      "variants": 3,
+      "duration": 0.9,
+      "text": "ya"
+    },
+    "cust_anak_and": {
+      "speaker": "customer_anak",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_anak_and",
+      "variants": 1,
+      "duration": 0.6,
+      "text": "dan"
+    },
+    "cust_anak_happy": {
+      "speaker": "customer_anak",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_anak_happy",
+      "variants": 3,
+      "duration": 1.5,
+      "text": "Wah, terima kasih!"
+    },
+    "cust_anak_confused": {
+      "speaker": "customer_anak",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_anak_confused",
+      "variants": 3,
+      "duration": 1.8,
+      "text": "Eh, kayaknya bukan itu deh"
+    },
+    "cust_anak_bye": {
+      "speaker": "customer_anak",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_anak_bye",
+      "variants": 2,
+      "duration": 1.2,
+      "text": "Dadah!"
+    },
+    "cust_ibu_greet": {
+      "speaker": "customer_ibu",
+      "category": "customer_greeting",
+      "base": "res://assets/audio/voice/customer/cust_ibu_greet",
+      "variants": 2,
+      "duration": 1.1,
+      "text": "Halo!"
+    },
+    "cust_ibu_open": {
+      "speaker": "customer_ibu",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_ibu_open",
+      "variants": 3,
+      "duration": 1.6,
+      "text": "Saya mau beli"
+    },
+    "cust_ibu_close": {
+      "speaker": "customer_ibu",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_ibu_close",
+      "variants": 3,
+      "duration": 0.9,
+      "text": "ya"
+    },
+    "cust_ibu_and": {
+      "speaker": "customer_ibu",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_ibu_and",
+      "variants": 1,
+      "duration": 0.6,
+      "text": "dan"
+    },
+    "cust_ibu_happy": {
+      "speaker": "customer_ibu",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_ibu_happy",
+      "variants": 3,
+      "duration": 1.5,
+      "text": "Wah, terima kasih!"
+    },
+    "cust_ibu_confused": {
+      "speaker": "customer_ibu",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_ibu_confused",
+      "variants": 3,
+      "duration": 1.8,
+      "text": "Eh, kayaknya bukan itu deh"
+    },
+    "cust_ibu_bye": {
+      "speaker": "customer_ibu",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_ibu_bye",
+      "variants": 2,
+      "duration": 1.2,
+      "text": "Dadah!"
+    },
+    "cust_bapak_greet": {
+      "speaker": "customer_bapak",
+      "category": "customer_greeting",
+      "base": "res://assets/audio/voice/customer/cust_bapak_greet",
+      "variants": 2,
+      "duration": 1.1,
+      "text": "Halo!"
+    },
+    "cust_bapak_open": {
+      "speaker": "customer_bapak",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_bapak_open",
+      "variants": 3,
+      "duration": 1.6,
+      "text": "Saya mau beli"
+    },
+    "cust_bapak_close": {
+      "speaker": "customer_bapak",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_bapak_close",
+      "variants": 3,
+      "duration": 0.9,
+      "text": "ya"
+    },
+    "cust_bapak_and": {
+      "speaker": "customer_bapak",
+      "category": "customer_order",
+      "base": "res://assets/audio/voice/customer/cust_bapak_and",
+      "variants": 1,
+      "duration": 0.6,
+      "text": "dan"
+    },
+    "cust_bapak_happy": {
+      "speaker": "customer_bapak",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_bapak_happy",
+      "variants": 3,
+      "duration": 1.5,
+      "text": "Wah, terima kasih!"
+    },
+    "cust_bapak_confused": {
+      "speaker": "customer_bapak",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_bapak_confused",
+      "variants": 3,
+      "duration": 1.8,
+      "text": "Eh, kayaknya bukan itu deh"
+    },
+    "cust_bapak_bye": {
+      "speaker": "customer_bapak",
+      "category": "customer_reaction",
+      "base": "res://assets/audio/voice/customer/cust_bapak_bye",
+      "variants": 2,
+      "duration": 1.2,
+      "text": "Dadah!"
+    },
+    "num_1": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_1",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "satu"
+    },
+    "num_2": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_2",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "dua"
+    },
+    "num_3": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_3",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "tiga"
+    },
+    "num_4": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_4",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "empat"
+    },
+    "num_5": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_5",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "lima"
+    },
+    "num_6": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_6",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "enam"
+    },
+    "num_7": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_7",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "tujuh"
+    },
+    "num_8": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_8",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "delapan"
+    },
+    "num_9": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_9",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "sembilan"
+    },
+    "num_10": {
+      "speaker": "kanca",
+      "category": "number",
+      "base": "res://assets/audio/voice/number/num_10",
+      "variants": 1,
+      "duration": 0.7,
+      "text": "sepuluh"
+    },
+    "item_pisang": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_pisang",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "pisang"
+    },
+    "item_apel": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_apel",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "apel"
+    },
+    "item_jeruk": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_jeruk",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "jeruk"
+    },
+    "item_telur": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_telur",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "telur"
+    },
+    "item_roti": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_roti",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "roti"
+    },
+    "item_susu": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_susu",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "susu"
+    },
+    "item_permen": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_permen",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "permen"
+    },
+    "item_biskuit": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_biskuit",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "biskuit"
+    },
+    "item_air_mineral": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_air_mineral",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "air mineral"
+    },
+    "item_mie_instan": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_mie_instan",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "mi instan"
+    },
+    "item_gula": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_gula",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "gula"
+    },
+    "item_minyak": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_minyak",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "minyak goreng"
+    },
+    "item_sabun": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_sabun",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "sabun"
+    },
+    "item_beras": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_beras",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "beras"
+    },
+    "item_es_krim": {
+      "speaker": "kanca",
+      "category": "item",
+      "base": "res://assets/audio/voice/item/item_es_krim",
+      "variants": 1,
+      "duration": 0.8,
+      "text": "es krim"
+    }
+  }
+}
