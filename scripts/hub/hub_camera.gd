@@ -17,9 +17,12 @@ extends Camera3D
 ## Third-person, elevated, looking down (§7.1). Not adjustable.
 const PITCH_DEGREES := -35.0
 
-const MIN_DISTANCE := 6.5
-const MAX_DISTANCE := 22.0
-const DEFAULT_DISTANCE := 13.0
+## Scaled for a 30m village. These were 6.5 / 22 / 13 when it was 40m across,
+## and carried over unchanged they put the camera out past the fence and into the
+## tree ring, so every shot had a blurred trunk across one corner of it.
+const MIN_DISTANCE := 5.0
+const MAX_DISTANCE := 16.0
+const DEFAULT_DISTANCE := 10.0
 
 ## What one press of a zoom button is worth. Big enough that a press is visibly
 ## worth making, small enough that the range takes several to cross.
@@ -38,6 +41,12 @@ const YAW_SHARPNESS := 16.0
 signal view_changed()
 
 @export var target: Node3D = null
+
+## How far from the middle the camera may sit, in world units. Zero means no
+## limit. The hub sets this from its fence line: pulling back from a child
+## standing at the far edge otherwise walks the camera out through the fence, and
+## what fills the frame then is the back of a tree.
+@export var limit: float = 0.0
 
 var _yaw: float = 0.0
 var _shown_yaw: float = 0.0
@@ -72,6 +81,9 @@ func _physics_process(delta: float) -> void:
 	var offset: Vector3 = _offset(_shown_yaw, _shown_distance)
 	var desired: Vector3 = target.global_position + offset
 	desired.y = offset.y
+	if limit > 0.0:
+		desired.x = clampf(desired.x, -limit, limit)
+		desired.z = clampf(desired.z, -limit, limit)
 	var weight: float = 1.0 - exp(-FOLLOW_SHARPNESS * delta)
 	global_position = global_position.lerp(desired, weight)
 

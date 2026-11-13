@@ -26,6 +26,12 @@ keystore.properties
 assets/audio/**/masters/
 *.wav
 
+# --- Python bytecode from the Blender build scripts ---
+# tools/blender/build_branding.py imports build_characters, which is what makes
+# a committed .pyc churn on every brand rebuild.
+__pycache__/
+*.pyc
+
 # --- OS / editor cruft ---
 Thumbs.db
 ehthumbs.db

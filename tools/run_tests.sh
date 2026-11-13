@@ -18,6 +18,7 @@ SUITES=(
 	"res://tools/warung_test.tscn|Warung end to end"
 	"res://tools/kebun_test.tscn|Kebun end to end"
 	"res://tools/integration_test.tscn|hub to mini-game and back"
+	"res://tools/check_branding.tscn|brand images and the 48px icon"
 )
 
 if ! command -v "$GODOT" >/dev/null 2>&1 && [ ! -x "$GODOT" ]; then

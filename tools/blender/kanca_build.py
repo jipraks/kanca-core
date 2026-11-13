@@ -22,6 +22,7 @@ import os
 
 import bmesh
 import bpy
+import numpy
 from mathutils import Matrix, Vector
 
 X_AXIS = Vector((1.0, 0.0, 0.0))
@@ -72,6 +73,325 @@ def make_material(name, colour, roughness=0.85):
     return material
 
 
+# ------------------------------------------------- repairing supplied models
+
+## Anything darker than this in every channel is gutter, not texture. A baked
+## atlas has real colour in it; it has no near-black.
+GUTTER_LEVEL = 0.02
+
+## Passes of colour pushed outwards from each UV island. Eight covers a 2048
+## atlas down to its 128px mip, which is smaller than anything here renders.
+DILATE_PASSES = 8
+
+
+def strip_pbr(material):
+    """Leaves the base colour and throws the rest away.
+
+    The metallic-roughness map alone is 4096 square - four times the pixels of
+    the colour that does all the visible work - and it exists to describe a
+    surface response this game does not render. §11: flat or lightly-shaded, no
+    normal maps, no roughness maps.
+    """
+    if not material.use_nodes:
+        return None
+    tree = material.node_tree
+    bsdf = next((n for n in tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        return None
+
+    # The image is read out before anything is disconnected, and no node is ever
+    # deleted. Removing nodes from a tree that Python still holds references into
+    # is a segfault in Blender, not an exception - which is exactly how the first
+    # version of this ended, on the line that read `base_colour.image` after the
+    # normal map beside it had been removed.
+    link = bsdf.inputs["Base Color"].links[0] if bsdf.inputs["Base Color"].links else None
+    atlas = link.from_node.image if link is not None else None
+
+    for socket in ("Metallic", "Roughness", "Normal", "Specular IOR Level"):
+        if socket not in bsdf.inputs:
+            continue
+        for connection in list(bsdf.inputs[socket].links):
+            tree.links.remove(connection)
+
+    bsdf.inputs["Metallic"].default_value = 0.0
+    bsdf.inputs["Roughness"].default_value = 0.9
+
+    return atlas
+
+
+def resize_atlas(image, longest):
+    """Scales a supplied atlas down to `longest` on its longer side.
+
+    Generators hand back 4096-square textures as a matter of course. For a
+    character 1.15m tall on a phone that is 64MB of uncompressed texture to
+    describe something a couple of hundred pixels high — half the §4.2 budget for
+    the whole scene, spent on one child. It is also more than `dilate` can hold:
+    a 4096 atlas needs about half a gigabyte of float arrays, and Blender's
+    Python runs out first.
+    """
+    width, height = image.size
+    if max(width, height) <= longest:
+        return width, height
+    factor = float(longest) / float(max(width, height))
+    image.scale(max(int(width * factor), 1), max(int(height * factor), 1))
+    return image.size[0], image.size[1]
+
+
+def dilate(image, passes=DILATE_PASSES):
+    """Pushes each UV island's colour outwards into the black gutter.
+
+    An auto-unwrap with 3,844 islands and no padding is fine at 1:1 and falls
+    apart the moment anything averages neighbouring texels - which mipmapping
+    does on every frame and ETC2 does once, in 4x4 blocks, at import. The fringe
+    that appears is black, so it reads as dirt along every roof edge and every
+    fence post.
+
+    Nothing clever: repeatedly replace each gutter pixel with the mean of the
+    non-gutter pixels touching it. Eight passes is eight pixels of bleed, which
+    is four times what a 4x4 compression block can reach across.
+    """
+    width, height = image.size
+    pixels = numpy.empty(width * height * 4, dtype=numpy.float32)
+    image.pixels.foreach_get(pixels)
+    rgba = pixels.reshape(height, width, 4)
+
+    filled = rgba[:, :, :3].max(axis=2) > GUTTER_LEVEL
+    before = int((~filled).sum())
+
+    for _pass in range(passes):
+        if filled.all():
+            break
+        total = numpy.zeros((height, width, 3), dtype=numpy.float32)
+        count = numpy.zeros((height, width), dtype=numpy.float32)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1),
+                       (-1, -1), (-1, 1), (1, -1), (1, 1)):
+            shifted_rgb = numpy.roll(numpy.roll(rgba[:, :, :3], dy, axis=0), dx, axis=1)
+            shifted_filled = numpy.roll(numpy.roll(filled, dy, axis=0), dx, axis=1)
+            total += shifted_rgb * shifted_filled[:, :, None]
+            count += shifted_filled
+        grew = (~filled) & (count > 0)
+        rgba[grew, :3] = total[grew] / count[grew][:, None]
+        filled |= grew
+
+    image.pixels.foreach_set(rgba.reshape(-1))
+    image.update()
+    after = int((~filled).sum())
+    return before, after
+
+
+## Where the hip is, as a fraction of a character's height. Both supplied models
+## put it near enough here; it is exposed because the next one might not.
+HIP_RATIO = 0.46
+
+## How far the weighting fades from all-body to all-leg, as a fraction of height.
+## Too sharp and the mesh creases at the hip; too soft and the belly swings.
+HIP_BLEND = 0.09
+
+## How wide the seam between the two legs is, as a fraction of the character's
+## width. Anything inside it is shared, so a mesh whose legs touch does not tear.
+LEG_SEAM = 0.06
+
+
+def rig_legs(obj, hip_ratio=HIP_RATIO, blend=HIP_BLEND, seam=LEG_SEAM):
+    """Gives a supplied character two leg bones and the weights to swing them.
+
+    The characters built by this project carry their legs as separate objects
+    with the pivot at the hip, and `WalkCycle` rotates those. A supplied model is
+    one continuous shell: there is no leg to rotate, and cutting one out leaves a
+    hole at the hip that opens every time it swings. So they get a skeleton
+    instead - three bones, and the mesh bound to them.
+
+    The weights are computed, not painted and not `ARMATURE_AUTOMATIC`. Automatic
+    weights solve a heat equation over the surface, which on a remeshed shell
+    with the legs nearly touching bleeds one leg's influence into the other and
+    puts a little of the belly on both. A vertex here belongs to a leg if it is
+    below the hip and on that side of the middle, and the only softness is a
+    deliberate fade at each boundary - which is a rule you can read off the
+    model, and predict, and fix.
+
+    Everything above the hip is weighted to `root`, which never rotates. That is
+    what keeps the head still while the legs move.
+    """
+    low, high = _mesh_z_range(obj)
+    height = max(high - low, 1e-5)
+    hip_z = low + height * hip_ratio
+    fade = height * blend
+
+    width = max(obj.dimensions.x, 1e-5)
+    half_seam = width * seam * 0.5
+    track = width * 0.22
+
+    rig_data = bpy.data.armatures.new("%s_rig" % obj.name)
+    rig = bpy.data.objects.new("%s_rig" % obj.name, rig_data)
+    bpy.context.collection.objects.link(rig)
+
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = rig
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bones = rig_data.edit_bones
+
+    root = bones.new("root")
+    root.head = (0.0, 0.0, low)
+    root.tail = (0.0, 0.0, hip_z)
+    for name, side in (("leg_l", -1.0), ("leg_r", 1.0)):
+        bone = bones.new(name)
+        # Head at the hip and tail at the floor, so the bone points the way the
+        # leg does and a rotation about its X swings it forward and back.
+        bone.head = (side * track, 0.0, hip_z)
+        bone.tail = (side * track, 0.0, low)
+        bone.parent = root
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    for name in ("root", "leg_l", "leg_r"):
+        if name not in obj.vertex_groups:
+            obj.vertex_groups.new(name=name)
+
+    for vertex in obj.data.vertices:
+        point = obj.matrix_world @ vertex.co
+        # 0 above the hip, 1 a fade below it.
+        leg = min(max((hip_z - point.z) / max(fade, 1e-5), 0.0), 1.0)
+        # 0 on the left, 1 on the right, shared across the seam.
+        right = min(max((point.x + half_seam) / max(half_seam * 2.0, 1e-5), 0.0), 1.0)
+        obj.vertex_groups["root"].add([vertex.index], 1.0 - leg, "REPLACE")
+        obj.vertex_groups["leg_l"].add([vertex.index], leg * (1.0 - right), "REPLACE")
+        obj.vertex_groups["leg_r"].add([vertex.index], leg * right, "REPLACE")
+
+    modifier = obj.modifiers.new("armature", "ARMATURE")
+    modifier.object = rig
+    obj.parent = rig
+    obj.matrix_parent_inverse = rig.matrix_world.inverted()
+    return rig
+
+
+def _mesh_z_range(obj):
+    zs = [(obj.matrix_world @ v.co).z for v in obj.data.vertices]
+    return (min(zs), max(zs)) if zs else (0.0, 1.0)
+
+
+def decimate(obj, target):
+    """Collapses `obj` to roughly `target` triangles. Returns (before, after).
+
+    Collapse rather than un-subdivide or planar: it is the only one of the three
+    that works on a remesh, where there is no subdivision history to undo and no
+    flat regions to merge. ASSETS.md records where it does not work - foliage,
+    where the surface is thousands of separate leaf islands and the collapse
+    cannot merge across them. A body is one surface.
+    """
+    before = sum(max(len(p.vertices) - 2, 0) for p in obj.data.polygons)
+    if before <= target:
+        return before, before
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    modifier = obj.modifiers.new("decimate", "DECIMATE")
+    modifier.ratio = float(target) / float(before)
+    bpy.ops.object.modifier_apply(modifier="decimate")
+    after = sum(max(len(p.vertices) - 2, 0) for p in obj.data.polygons)
+    return before, after
+
+
+def place_character(obj, height):
+    """Turns a supplied character to face +Y, scales it, and drops it on the floor.
+
+    All three, because the game places a character by its feet, turns it with
+    `Facing`, and measures it in metres - and a model that is wrong about any one
+    of those is wrong in a way that looks like a bug somewhere else.
+
+    `rotation_mode` first. The glTF importer leaves objects on QUATERNION, and
+    assigning `rotation_euler` to one of those is silently ignored: the model
+    exports facing exactly the way it came in, and the character stands in the
+    village with its back to everything it is meant to be looking at.
+    """
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+    obj.rotation_mode = "XYZ"
+    obj.rotation_euler = (0.0, 0.0, math.pi)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+
+    # By height, not by the longest side: an outstretched arm is longer than the
+    # character is tall, and height is the figure that has to be right.
+    span = max(obj.dimensions.z, 1e-5)
+    obj.scale = tuple(s * (height / span) for s in obj.scale)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    place_origin_at_base(obj)
+
+
+def split_figures(obj):
+    """Splits a sheet into its figures, or returns just this one if it is not a
+    sheet. Names them `figure_0`, `figure_1`, ... left to right."""
+    xs = numpy.array([(obj.matrix_world @ v.co).x for v in obj.data.vertices])
+    if not len(xs):
+        return [obj]
+    counts, _edges = numpy.histogram(xs, bins=60,
+                                     range=(float(xs.min()), float(xs.max())))
+    gaps = int(numpy.sum((counts[1:-1] == 0) & (counts[:-2] > 0)))
+    if gaps < 1:
+        return [obj]
+    return split_on_gaps(obj, ["figure_%d" % i for i in range(gaps + 1)])
+
+
+def split_on_gaps(obj, names):
+    """Cuts a sheet of figures into one object each, on the empty columns
+    between them.
+
+    Found rather than hardcoded. The sheet has two clean gaps in its vertex
+    histogram and those are the only places a cut is safe; a coordinate typed in
+    here would be right for this file and silently wrong for the next one.
+    """
+    xs = numpy.array([(obj.matrix_world @ v.co).x for v in obj.data.vertices])
+    low, high = float(xs.min()), float(xs.max())
+    bins = 60
+    counts, edges = numpy.histogram(xs, bins=bins, range=(low, high))
+
+    cuts = []
+    index = 1
+    while index < bins - 1:
+        if counts[index] == 0:
+            start = index
+            while index < bins - 1 and counts[index] == 0:
+                index += 1
+            cuts.append(float((edges[start] + edges[index]) * 0.5))
+        index += 1
+
+    if len(cuts) != len(names) - 1:
+        raise RuntimeError(
+            "expected %d gaps, found %d at %s - the sheet is not laid out the "
+            "way this asked for"
+            % (len(names) - 1, len(cuts), cuts))
+    print("  split at x = %s" % ", ".join("%.3f" % c for c in cuts))
+
+    bounds = [low - 1.0] + cuts + [high + 1.0]
+    parts = []
+    for index, name in enumerate(names):
+        parts.append(_slice_x(obj, bounds[index], bounds[index + 1], name))
+    return parts
+
+
+def _slice_x(source, low_x, high_x, name):
+    """One pose, as its own object with nothing of the others left in it."""
+    copy = source.copy()
+    copy.data = source.data.copy()
+    copy.name = name
+    bpy.context.collection.objects.link(copy)
+
+    bm = bmesh.new()
+    bm.from_mesh(copy.data)
+    doomed = [face for face in bm.faces
+              if not (low_x <= sum(v.co.x for v in face.verts) / len(face.verts) <= high_x)]
+    bmesh.ops.delete(bm, geom=doomed, context="FACES")
+    # Deleting faces leaves their vertices behind, and a cloud of orphans three
+    # poses wide still counts towards the bounding box — which is what every
+    # placement below is measured from.
+    loose = [vertex for vertex in bm.verts if not vertex.link_faces]
+    bmesh.ops.delete(bm, geom=loose, context="VERTS")
+    bm.to_mesh(copy.data)
+    bm.free()
+    return copy
+
+
 # ---------------------------------------------------------------- shapes
 
 def revolve(bm, profile, segments, material_at=0, section_at=None):
@@ -117,21 +437,43 @@ def revolve(bm, profile, segments, material_at=0, section_at=None):
     return levels
 
 
-def sweep(bm, spine, section_at, radial_segments, material_index=0, cap_ends=True):
+def sweep(bm, spine, section_at, radial_segments, material_index=0, cap_ends=True,
+          up=None):
     """Sweeps a closed cross-section along a spine.
 
     `spine` is a list of (t, position, tangent). `section_at(t, theta)` returns
     the (across, through) offset, so a section can be an ellipse, a rounded
     rectangle or a ridged tube - which is the difference between a bread loaf, a
     sachet and a banana.
+
+    **The default frame is only correct while the spine stays in the XZ plane.**
+    It pins the "through" axis to +Y and derives "across" from the tangent, which
+    is right for every limb, trunk and stalk in this project because all of them
+    run up Z. Give it a spine along Y and the ring ends up containing the spine
+    instead of crossing it: the sweep comes out as a flat plate, silently. That
+    is a real afternoon - the first four-legged Kanca had a fin for a torso.
+
+    Pass `up` for anything that travels along Y. The frame is then built properly
+    from the tangent and that reference direction, and "through" means up. The
+    default is left alone rather than fixed because every model in the repository
+    was authored against it and a correct frame is a *different* frame - the
+    across axis comes out negated, which flips the winding of every face in the
+    project.
     """
     rings = []
     for t, position, tangent in spine:
-        normal = Vector((-tangent.z, 0.0, tangent.x))
-        if normal.length < 1e-6:
-            normal = Vector((1.0, 0.0, 0.0))
-        normal.normalize()
-        binormal = Vector((0.0, 1.0, 0.0))
+        if up is None:
+            normal = Vector((-tangent.z, 0.0, tangent.x))
+            if normal.length < 1e-6:
+                normal = Vector((1.0, 0.0, 0.0))
+            normal.normalize()
+            binormal = Vector((0.0, 1.0, 0.0))
+        else:
+            reference = Vector(up).normalized()
+            if abs(tangent.dot(reference)) > 0.999:
+                reference = Vector((0.0, 1.0, 0.0))
+            normal = tangent.cross(reference).normalized()
+            binormal = normal.cross(tangent).normalized()
         ring = []
         for step in range(radial_segments):
             theta = math.tau * step / radial_segments
@@ -451,8 +793,14 @@ def part_from_bmesh(name, bm, materials, pivot):
     return obj
 
 
-def export_hierarchy(root, out_path):
-    """Exports a parent and everything under it as one glTF."""
+def export_hierarchy(root, out_path, apply_modifiers=True):
+    """Exports a parent and everything under it as one glTF.
+
+    `apply_modifiers` must be off for anything skinned. Applying an Armature
+    modifier on the way out bakes the rest pose into the vertices *and* leaves
+    the skin attached, so the exporter writes the character twice - once posed,
+    once not - and the file comes back with two of him standing side by side.
+    """
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = root
@@ -464,7 +812,8 @@ def export_hierarchy(root, out_path):
 
     select(root)
     kwargs = dict(filepath=out_path, export_format="GLB", use_selection=True,
-                  export_apply=True, export_yup=True, export_vertex_color="ACTIVE")
+                  export_apply=apply_modifiers, export_yup=True,
+                  export_vertex_color="ACTIVE")
     for _attempt in range(3):
         try:
             bpy.ops.export_scene.gltf(**kwargs)

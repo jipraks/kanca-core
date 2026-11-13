@@ -26,7 +26,13 @@ transform = Transform3D(0.766044, -0.492404, 0.413176, 0, 0.642788, 0.766044, -0
 light_color = Color(1, 0.968627, 0.898039, 1)
 light_energy = 0.9
 shadow_enabled = true
-directional_shadow_max_distance = 45.0
+; One orthogonal split, not the default four. Every split re-draws the shadow
+; casters, and once the village mesh started casting, four of them cost 40,000
+; triangles of the 80,000 §4.2 allows — four times the village, to shadow a
+; place thirty metres across that the camera never leaves. One split spends the
+; whole 2048 map on the only range that is ever in frame.
+directional_shadow_mode = 0
+directional_shadow_max_distance = 38.0
 
 [node name="Player" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 4)

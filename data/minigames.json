@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "_note": "The registry the hub and the router both read. A fourth mini-game is added by appending an entry here plus its scene and level file - neither the hub nor SceneRouter changes (PLAN.md 6.2). hub_position is [x, z] in world units; the hub is roughly 40x40 (7.1). unlock_requires null means always available (7.2). hub_rotation_degrees turns each building to face the village centre; a model's front is -Z, so these are Facing.angle_towards(player_start - hub_position).",
+  "_note": "The registry the hub and the router both read. A fourth mini-game is added by appending an entry here plus its scene and level file - neither the hub nor SceneRouter changes (PLAN.md 6.2). hub_position is [x, z] in world units; the village is 30x30 (7.1). unlock_requires null means always available (7.2). hub_rotation_degrees turns each building's sign to face the village centre; a model's front is -Z, so these are Facing.angle_towards(player_start - hub_position). An empty model means the building is drawn by the village mesh itself (Hub.VILLAGE_MODEL) and only its collider is built here - the positions and sizes below are measured off that mesh, not chosen.",
   "mini_games": {
     "kebun": {
       "scene": "res://scenes/minigames/kebun/kebun.tscn",
-      "model": "res://assets/models/environment/kebun.glb",
+      "model": "",
       "display_name": "Kebun",
       "order": 1,
       "unlock_requires": null,
@@ -12,21 +12,21 @@
       "colour": "7cc576",
       "roof_colour": "5da85c",
       "hub_position": [
-        -9.0,
-        -7.0
+        -8.15,
+        -2.67
       ],
-      "hub_rotation_degrees": -140.7,
+      "hub_rotation_degrees": -136.8,
       "building_size": [
-        7.0,
-        2.85,
-        6.0
+        6.0,
+        2.39,
+        5.92
       ],
       "locked_style": "sleeping",
       "point_voice_id": "kanca_hub_point"
     },
     "warung": {
       "scene": "res://scenes/minigames/warung/warung.tscn",
-      "model": "res://assets/models/environment/warung.glb",
+      "model": "",
       "display_name": "Warung",
       "order": 2,
       "unlock_requires": {
@@ -37,21 +37,21 @@
       "colour": "f5a623",
       "roof_colour": "c9821a",
       "hub_position": [
-        0.0,
-        -11.0
+        -0.02,
+        -9.3
       ],
       "hub_rotation_degrees": 180.0,
       "building_size": [
-        6.0,
-        3.95,
-        5.0
+        6.55,
+        2.53,
+        5.08
       ],
       "locked_style": "under_construction",
       "point_voice_id": "kanca_hub_point"
     },
     "dapur": {
       "scene": "res://scenes/minigames/dapur/dapur.tscn",
-      "model": "res://assets/models/environment/dapur.glb",
+      "model": "",
       "display_name": "Dapur",
       "order": 3,
       "unlock_requires": {
@@ -62,14 +62,14 @@
       "colour": "86c7eb",
       "roof_colour": "5a95bb",
       "hub_position": [
-        9.5,
-        -6.0
+        9.28,
+        -3.98
       ],
-      "hub_rotation_degrees": 136.5,
+      "hub_rotation_degrees": 137.1,
       "building_size": [
-        6.0,
-        3.7,
-        5.5
+        6.3,
+        3.33,
+        6.51
       ],
       "locked_style": "under_construction",
       "point_voice_id": "kanca_hub_point"

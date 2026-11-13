@@ -12,7 +12,15 @@ extends Node
 
 const MASCOT_MODEL := "res://assets/models/characters/kanca.glb"
 const PLAYER_MODEL := "res://assets/models/characters/player.glb"
-const APP_ICON := "res://icon.svg"
+const BRAND_DIR := "res://assets/ui/brand/"
+const BRAND_FILES := {
+	"mascot master": "kanca_full.png",
+	"mascot portrait": "kanca_portrait_256.png",
+	"wordmark": "wordmark.svg",
+	"adaptive fg": "adaptive_foreground_432.png",
+	"adaptive bg": "adaptive_background_432.png",
+	"adaptive mono": "adaptive_monochrome_432.png",
+}
 const BUILDING_ICON_DIR := "res://assets/ui/buildings/"
 
 var _present: int = 0
@@ -76,13 +84,21 @@ func _report_characters() -> void:
 
 func _report_mascot() -> void:
 	print("--- Kanca ---")
-	print("The model exists (§16.2, resolved 2026-08-30). What it does not have")
-	print("is the rig, the five animations and the four expressions §11.1 asks")
-	print("for — a procedural script cannot produce those.")
+	print("Supplied model, repaired by tools/blender/import_mascot.py (§16.2).")
+	print("Three poses in one file: idle, point, celebrate. Still missing from")
+	print("§11.1 are walk, think, and the four expressions — the poses are")
+	print("continuous shells with no separable legs, so he does not step.")
 	_report("mascot model", MASCOT_MODEL)
-	print("  app icon           %s  %s" % [
-		"placeholder" if _is_placeholder_icon() else "custom     ",
-		APP_ICON])
+	print("")
+
+	print("--- brand ---")
+	print("Rendered from the mascot and composed by tools/build_brand_images.gd.")
+	print("tools/check_branding.tscn measures them; this only says they are here.")
+	_report("app icon", String(ProjectSettings.get_setting("application/config/icon", "")))
+	_report("boot splash",
+		String(ProjectSettings.get_setting("application/boot_splash/image", "")))
+	for label: String in BRAND_FILES:
+		_report(label, BRAND_DIR + String(BRAND_FILES[label]))
 	print("")
 
 
@@ -108,15 +124,3 @@ func _report(label: String, path: String) -> void:
 		_missing += 1
 	print("  %-18s %s  %s" % [label, "present    " if exists else "placeholder", path])
 
-
-## The shipped icon.svg is the marked placeholder written at project setup. A
-## real one will not carry that comment.
-func _is_placeholder_icon() -> bool:
-	if not FileAccess.file_exists(APP_ICON):
-		return true
-	var file: FileAccess = FileAccess.open(APP_ICON, FileAccess.READ)
-	if file == null:
-		return true
-	var text: String = file.get_as_text()
-	file.close()
-	return text.contains("PLACEHOLDER ICON")

@@ -42,6 +42,7 @@ func _ready() -> void:
 	_walk = WalkCycle.new(_visual)
 
 
+
 func _build_visual() -> Node3D:
 	var instance: Node3D = ModelKit.instantiate(MODEL)
 	if instance != null:
@@ -72,6 +73,7 @@ func _physics_process(delta: float) -> void:
 	_face_travel_direction(delta)
 	_step(delta)
 	_report_movement()
+
 
 
 ## Swings the legs at whatever pace the child is actually moving, and plays a

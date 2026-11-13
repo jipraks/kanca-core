@@ -10,9 +10,37 @@ extends RefCounted
 ## A path with a ruled edge reads as a decal; a path that frays into the grass
 ## reads as somewhere people have walked.
 ##
-## It stays flat where it matters. The undulation is a tenth of a metre — enough
+## It stays flat where it matters. The undulation is a fifth of a metre — enough
 ## for the light to find, far too little for a child to notice underfoot — and
 ## the collision body stays a plain box, so nothing about walking changes.
+##
+## What *does* have to change with it is everything standing on it. A flat
+## collider under a rolling surface means a character walks at y=0 while the
+## ground beside them is twenty centimetres higher, and twenty centimetres of a
+## 1.15m child is both feet and most of the shins. `height_at()` and `Sampler`
+## below exist for that: physics stays flat and the visuals sit on the surface.
+
+
+## Where the surface actually is, for anything that has to stand on it.
+##
+## Bundles the four arguments the height depends on so a caller can hold one
+## object and ask. The alternative is every character carrying the village's path
+## layout around, which is how the ground and the things on it drift apart.
+class Sampler extends RefCounted:
+	var _plaza_centre: Vector2
+	var _plaza_radius: float
+	var _paths: Array
+	var _seed: int
+
+	func _init(plaza_centre: Vector2, plaza_radius: float, paths: Array,
+			seed_value: int) -> void:
+		_plaza_centre = plaza_centre
+		_plaza_radius = plaza_radius
+		_paths = paths
+		_seed = seed_value
+
+	func height_at(point: Vector2) -> float:
+		return VillageGround.height_at(point, _plaza_centre, _plaza_radius, _paths, _seed)
 
 ## Cells across the whole village. At forty metres across this is a corner every
 ## sixty centimetres, which is what the colour gradient is sampled at — fine
@@ -27,6 +55,19 @@ const EDGE_WOBBLE := 0.55
 
 ## How far a path frays out into the grass, in metres.
 const EDGE_FEATHER := 0.45
+
+## Metres of ground covered by one tile of the speckle texture.
+##
+## The mesh cannot carry grass. At 64 cells across forty metres a corner lands
+## every 62cm, so the finest thing the vertex colours can describe is over a
+## metre wide — which is why the field reads as coloured plastic however good the
+## noise on it is. Four times the cells would be four times the triangles, and
+## §4.2 has 3,000 of the 80,000 left.
+##
+## A tiling texture buys the detail for nothing. Two metres a tile is small
+## enough to read as ground under a child's feet and large enough that the
+## repeat never announces itself at the distance the camera actually sits.
+const TEXTURE_METRES := 2.0
 
 
 ## `paths` is an array of {"from": Vector2, "to": Vector2, "width": float}.
@@ -72,10 +113,48 @@ static func _ground_material() -> StandardMaterial3D:
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
 	material.albedo_color = Color.WHITE
+	# Albedo is texture x vertex colour. The vertices say what this square metre
+	# is — meadow, dry grass, trodden earth — and the texture says what it is
+	# made of. Neither can do the other's job: the mesh is far too coarse for
+	# blades and one tiling texture cannot know where the path runs.
+	material.albedo_texture = _speckle_texture()
+	material.uv1_scale = Vector3(1.0 / TEXTURE_METRES, 1.0 / TEXTURE_METRES, 1.0)
 	material.roughness = 1.0
 	material.metallic = 0.0
 	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	return material
+
+
+## Fine mottling, generated rather than authored.
+##
+## Seamless, because the alternative at two metres a tile is a visible grid over
+## the whole village. Godot builds this on a worker thread, so the ground is
+## briefly untextured on the first frame and nobody sees it — the boot splash is
+## still up.
+##
+## Kept narrow on purpose: it multiplies the vertex colour, so anything with real
+## contrast in it turns the meadow into camouflage. What is wanted is the
+## suggestion that the surface has a surface.
+static func _speckle_texture() -> NoiseTexture2D:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.045
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 4
+	noise.fractal_gain = 0.55
+
+	var ramp: Gradient = Gradient.new()
+	ramp.set_color(0, Color(0.78, 0.80, 0.74))
+	ramp.set_color(1, Color(1.08, 1.06, 1.00))
+
+	var texture: NoiseTexture2D = NoiseTexture2D.new()
+	texture.width = 256
+	texture.height = 256
+	texture.seamless = true
+	texture.generate_mipmaps = true
+	texture.color_ramp = ramp
+	texture.noise = noise
+	return texture
 
 
 static func _add_triangle(surface: SurfaceTool, a: Vector2, b: Vector2, c: Vector2,
@@ -95,8 +174,11 @@ static func _add_triangle(surface: SurfaceTool, a: Vector2, b: Vector2, c: Vecto
 		# turns a meadow into a neon lawn — the same mistake, in the same
 		# direction, as feeding sRGB to a glTF baseColorFactor.
 		surface.set_color(_colour_at(point, dirt, seed_value).srgb_to_linear())
-		var lift: float = _noise(point * PATCH_SCALE, seed_value + 91) * UNDULATION
-		surface.add_vertex(Vector3(point.x, lift * (1.0 - dirt), point.y))
+		# UVs are world coordinates. The ground never moves and is never
+		# instanced, so there is nothing to gain from unwrapping it and one thing
+		# to lose: a seam where two patches of grass do not line up.
+		surface.set_uv(point)
+		surface.add_vertex(Vector3(point.x, _lift_at(point, dirt, seed_value), point.y))
 
 
 ## How much of this point is trodden path, 0 to 1. Public because the scatter
@@ -124,6 +206,29 @@ static func dirt_at(point: Vector2, plaza_centre: Vector2, plaza_radius: float,
 		nearest = minf(nearest, _distance_to_segment(point, from, to) - half_width)
 
 	return 1.0 - smoothstep(0.0, EDGE_FEATHER, nearest + wobble)
+
+
+## Height of the visible surface at a point, in metres.
+##
+## The one function the mesh, the undergrowth and everything that walks all have
+## to agree on. The collider is flat and stays flat — §7.1 does not want a lip
+## under a four-year-old's feet — so what stands on the ground is placed by this
+## instead, and the difference between the two is never more than UNDULATION.
+##
+## Paths flatten to zero, which is what a trodden path is: the same reason the
+## mesh sinks the undulation out under them.
+static func height_at(point: Vector2, plaza_centre: Vector2, plaza_radius: float,
+		paths: Array, seed_value: int) -> float:
+	return _lift_at(point, dirt_at(point, plaza_centre, plaza_radius, paths, seed_value),
+		seed_value)
+
+
+## Samples the noise directly rather than interpolating the mesh's corners. The
+## two disagree by well under a millimetre — the undulation's wavelength is six
+## metres and a cell is sixty centimetres — and the exact version would need the
+## grid's origin passed everywhere for no visible gain.
+static func _lift_at(point: Vector2, dirt: float, seed_value: int) -> float:
+	return _noise(point * PATCH_SCALE, seed_value + 91) * UNDULATION * (1.0 - dirt)
 
 
 static func _colour_at(point: Vector2, dirt: float, seed_value: int) -> Color:

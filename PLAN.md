@@ -591,11 +591,33 @@ Closed testing, feedback iteration, store listing, production release.
 **Do not resolve these unilaterally. Ask before proceeding if a task depends on one.**
 
 1. **Repo scope.** Is `kanca-core` the single repository for the entire game, or does it hold shared systems with mini-games split into separate repos? This plan assumes **single repository**. Confirm before restructuring.
-2. **Mascot design.** ~~Not finalised, will be commissioned.~~ **Resolved 2026-08-30:** Kanca is built procedurally by `tools/blender/build_characters.py`, on the project owner's instruction. The rule against *stock* models still stands and §11.1 still applies — a model described in code we wrote is authored work, which a downloaded one is not. What he still lacks is the rig, the five animations and the four expressions §11.1 asks for; a script that writes vertices cannot produce those, so pointing is currently a rotation rather than a gesture. Re-open this if the mascot is ever commissioned properly.
-3. **Movement controls.** Directional buttons are the specified default, based on the belief that tap-to-move confuses this age group. A virtual joystick (available natively since Godot 4.7) may be tested as an alternative — but only after directional buttons are working and only with real children.
-4. **Renderer.** Compatibility is chosen for reach. If device testing shows acceptable Vulkan behaviour across the target range, Mobile renderer may be reconsidered for better lighting. Do not switch without device data.
-5. **Money mechanics.** Warung levels 4–5 (payment and change) are unvalidated with the target age group. Treat as stretch scope and do not let them block the release of levels 1–3.
-6. **Monetisation.** Undecided for v1.0. Assume free with no IAP and no ads. Do not build any monetisation scaffolding.
+2. **Mascot design.** **Amended again 2026-08-31:** Kanca is a supplied model —
+   an upright, expressive kancil with a teal neckerchief, supplied as a
+   three-pose sheet (idle, point, celebrate) and repaired by
+   `tools/blender/import_mascot.py`. The procedural builder is deleted. He is
+   textured, which §11 otherwise forbids, and generated, which the CC0-only
+   sourcing rule otherwise forbids; both still stand for everything else and
+   `ASSETS.md` records the position. He gains three of §11.1's five poses and
+   loses the walk — the poses have no separable legs. *Superseded, same day:*
+   Kanca is a quadruped. He was built
+   upright at two and a half heads on the reading that §11.1's proportion rule and
+   §7.1's "points at things" both needed a biped; the project owner's judgement was
+   that a mouse-deer standing on its hind legs did not look like the animal it is
+   meant to be. The proportion rule in §11.1 goes with it — it describes a chibi
+   biped and cannot describe a quadruped — and pointing is now a turn and a raised
+   foreleg. `WalkCycle` trots him. ~~Not finalised, will be commissioned.~~
+   **Resolved 2026-08-30:** Kanca is built procedurally by `tools/blender/build_characters.py`, on the project owner's instruction. The rule against *stock* models still stands and §11.1 still applies — a model described in code we wrote is authored work, which a downloaded one is not. What he still lacks is the rig, the five animations and the four expressions §11.1 asks for; a script that writes vertices cannot produce those, so pointing is currently a rotation rather than a gesture. Re-open this if the mascot is ever commissioned properly.
+3. **Village art.** **Resolved 2026-08-31:** the procedurally generated village
+   was replaced by a single supplied mesh (Meshy AI), on the project owner's
+   instruction and with the eye-level render in front of them. It is a decision
+   against §11's texture and PBR rules and against the CC0-only sourcing rule,
+   both of which still stand for everything else; `ASSETS.md` records what was
+   repaired to make it usable, what it costs, and the copyright position.
+   Re-open this if the village is ever modelled properly.
+4. **Movement controls.** Directional buttons are the specified default, based on the belief that tap-to-move confuses this age group. A virtual joystick (available natively since Godot 4.7) may be tested as an alternative — but only after directional buttons are working and only with real children.
+5. **Renderer.** Compatibility is chosen for reach. If device testing shows acceptable Vulkan behaviour across the target range, Mobile renderer may be reconsidered for better lighting. Do not switch without device data.
+6. **Money mechanics.** Warung levels 4–5 (payment and change) are unvalidated with the target age group. Treat as stretch scope and do not let them block the release of levels 1–3.
+7. **Monetisation.** Undecided for v1.0. Assume free with no IAP and no ads. Do not build any monetisation scaffolding.
 
 ---
 

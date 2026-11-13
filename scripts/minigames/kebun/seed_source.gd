@@ -8,7 +8,16 @@ extends Draggable
 
 ## Sized from the measured projection, not from the basket mesh: at the Kebun
 ## camera distance this is what clears the 120px floor in §3.3.
-const TOUCH_SIZE := Vector3(1.4, 0.9, 1.15)
+## The touch box, not the basket. It is deliberately larger than the model — a
+## child aiming at a seed basket is aiming at "the bananas over there", not at a
+## piece of wickerwork.
+##
+## Shallower than it is wide since the camera moved off the top of the garden.
+## Depth now costs screen height *and* pushes the near face towards the bottom
+## edge of frame, and 1.15m of it put the front of the basket below the screen.
+## The box still projects to well over the §3.3 minimum in both axes; the depth
+## was slack, not headroom.
+const TOUCH_SIZE := Vector3(1.4, 0.9, 0.9)
 
 const BASKET_MODEL := "res://assets/models/garden/seed_basket.glb"
 

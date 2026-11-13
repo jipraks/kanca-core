@@ -13,6 +13,9 @@ signal dismissed()
 const AUTO_DISMISS_SECONDS := 6.0
 const STAR_SIZE := Vector2(84, 84)
 
+## By height. He is half as wide as he is tall, so a square box under-sizes him.
+const MASCOT_HEIGHT := 230
+
 var _mascot: TextureRect = null
 var _star_row: HBoxContainer = null
 var _coin_row: CountingRow = null
@@ -46,9 +49,9 @@ func _ready() -> void:
 	centre.add_child(column)
 
 	_mascot = TextureRect.new()
-	_mascot.name = "MascotPlaceholder"
-	_mascot.texture = PlaceholderFactory.build_swatch_icon("kanca", Palette.SIGNATURE, 200)
-	_mascot.custom_minimum_size = Vector2(200, 200)
+	_mascot.name = "Mascot"
+	_mascot.texture = PlaceholderFactory.build_mascot_portrait(MASCOT_HEIGHT)
+	_mascot.custom_minimum_size = Vector2(MASCOT_HEIGHT * 0.6, MASCOT_HEIGHT)
 	_mascot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_mascot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_mascot.mouse_filter = Control.MOUSE_FILTER_IGNORE

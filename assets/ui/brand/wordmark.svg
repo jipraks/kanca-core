@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581 180" width="581" height="180">
+  <!-- Kanca wordmark. Drawn here rather than set in a typeface on purpose.
+       PLAN.md §11 allows third-party art only under CC0, and no display face has
+       been chosen (ASSETS.md, Fonts); five letters drawn as stroked geometry is
+       authored work with nothing to license and nothing to embed.
+
+       Monoline, round caps, one weight. Cap height 84, x-height 60, stroke 24,
+       all on the same baseline at y=132. Recolour it by tinting — every pixel
+       is the same colour and the shape lives in the alpha. -->
+  <g fill="none" stroke="#4A3B2A" stroke-width="24"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- K -->
+    <path d="M52 48 V132"/>
+    <path d="M112 48 L52 96 L118 132"/>
+    <!-- a -->
+    <circle cx="194" cy="102" r="30"/>
+    <path d="M224 72 V132"/>
+    <!-- n -->
+    <path d="M270 132 V102 A30 30 0 0 1 330 102 V132"/>
+    <!-- c -->
+    <path d="M427 81 A30 30 0 1 0 427 123"/>
+    <!-- a -->
+    <circle cx="499" cy="102" r="30"/>
+    <path d="M529 72 V132"/>
+  </g>
+</svg>

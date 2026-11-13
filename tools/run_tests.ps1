@@ -38,6 +38,7 @@ $suites = @(
     @{ Scene = "res://tools/warung_test.tscn";      Label = "Warung end to end" }
     @{ Scene = "res://tools/kebun_test.tscn";       Label = "Kebun end to end" }
     @{ Scene = "res://tools/integration_test.tscn"; Label = "hub to mini-game and back" }
+    @{ Scene = "res://tools/check_branding.tscn"; Label = "brand images and the 48px icon" }
 )
 
 # Godot writes test results to stdout and parse errors to stderr, and Windows

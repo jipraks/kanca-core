@@ -81,6 +81,16 @@ static func _enable_vertex_colours(mesh: Mesh) -> void:
 			continue
 		material.vertex_color_use_as_albedo = true
 
+		# Anisotropic filtering, for the one model in the project that has a
+		# texture. A ground plane is seen almost edge-on across most of the
+		# screen, and plain mipmapping picks the blur level from whichever axis
+		# is shrinking fastest — so the far half of the village is filtered as if
+		# it were shrinking equally in both, and comes out smeared. This is the
+		# switch that decides that, and glTF import leaves it on the isotropic
+		# setting. Costs nothing on a model with no texture.
+		if material.albedo_texture != null:
+			material.texture_filter = 				BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
 
 static func _first_mesh(node: Node) -> MeshInstance3D:
 	var mesh: MeshInstance3D = node as MeshInstance3D

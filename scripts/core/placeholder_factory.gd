@@ -24,6 +24,17 @@ const ITEM_SIZE := 0.32
 ## shaded sides to give it bulk. Cosmetic tuning, worth a second look on a device.
 const SPRITE_SIZE_BOOST := 1.35
 
+## Kanca, photographed from the model by tools/blender/build_branding.py. The
+## loading screen, the boot screen and the celebration overlay all want a picture
+## of him, and every one of them should be the same picture — §11.1 asks for one
+## mascot across the icon, the loading screen and the buttons, and three near-
+## misses is exactly how that promise gets broken without anyone deciding to.
+const MASCOT_PORTRAIT := "res://assets/ui/brand/kanca_portrait_256.png"
+
+## The brand lockup the engine draws before the first frame, drawn again by the
+## boot scene so the handover is invisible.
+const SPLASH_LOCKUP := "res://assets/ui/brand/splash_1280x720.png"
+
 enum Shape { BOX, SPHERE, CYLINDER, CAPSULE, PRISM }
 
 static var _material_cache: Dictionary = {}
@@ -242,6 +253,33 @@ static func _mesh_for(key: String, size: float) -> Mesh:
 
 
 # ---------------------------------------------------------------- 2D icons
+
+## Kanca's portrait, or the swatch that stood in for him before there was one.
+##
+## `size` only ever governed the generated fallback; the render comes back at its
+## own resolution and is scaled by whatever is showing it, which is what keeps
+## one file serving a 160px loading screen and a 356px splash.
+static func build_mascot_portrait(size: int = 160) -> Texture2D:
+	var texture: Texture2D = _load_texture(MASCOT_PORTRAIT)
+	if texture != null:
+		return texture
+	return build_swatch_icon("kanca", Palette.SIGNATURE, size)
+
+
+## The full brand lockup — Kanca and the wordmark — or null before it is built.
+##
+## Null rather than a stand-in on purpose. The caller is the boot screen, which
+## has a background of its own to fall back to; a swatch stretched across a
+## 1280×720 canvas would be worse than nothing.
+static func build_splash_lockup() -> Texture2D:
+	return _load_texture(SPLASH_LOCKUP)
+
+
+static func _load_texture(path: String) -> Texture2D:
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
+
 
 ## Icon for an item. Returns the real texture when data/items.json names one that
 ## exists on disk, otherwise a generated swatch.

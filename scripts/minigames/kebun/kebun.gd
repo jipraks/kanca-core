@@ -18,17 +18,26 @@ const GAME_ID := "kebun"
 
 ## Layout in world units (1 unit = 1 metre, §11).
 ##
-## The camera is orthographic (see kebun.tscn), which is what makes this tractable:
-## every plot projects to exactly the same size no matter which row it is in, so
-## no plot is harder for a child to hit than another. One world unit is 90px, and
-## the depth axis foreshortens by 0.866, so the §3.3 minimums translate directly
-## into the spacings below. tools/kebun_test.tscn measures the result.
-const PLOT_SPACING_X := 2.0
-const PLOT_SPACING_Z := 2.2
+## The camera is perspective and sits at 52° (see kebun.tscn). It was orthographic
+## and almost overhead, which made the arithmetic here trivial — every plot
+## projected to the same size whichever row it was in — and made the garden look
+## like a board game seen from directly above. Nothing in it read as an object
+## with sides.
+##
+## What that costs is that the numbers below are no longer derivable. The back row
+## is further away and therefore smaller, the depth axis foreshortens by 0.79, and
+## the bottom edge of frame now meets the ground about three metres in front of
+## the camera — which is a constraint the orthographic version simply did not
+## have, and the one that decides where the seed row can stand. Every spacing here
+## was found by measuring: `tools/kebun_test.tscn` projects each plot and each
+## basket and checks it against the §3.3 minimums, and all of them are within a
+## few pixels of one limit or another. Change one and run it.
+const PLOT_SPACING_X := 2.2
+const PLOT_SPACING_Z := 3.15
 const PLOTS_PER_ROW := 3
-const PLOT_ORIGIN_Z := -1.0
-const SEED_ROW_Z := 2.3
-const SEED_SPACING := 2.0
+const PLOT_ORIGIN_Z := -2.5
+const SEED_ROW_Z := 2.2
+const SEED_SPACING := 2.7
 
 ## The garden's own patch of ground. Smaller than the village and centred behind
 ## the plots, so the fence sits at the edge of frame rather than across it.

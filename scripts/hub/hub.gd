@@ -8,45 +8,70 @@ extends Node3D
 ## should try next. Everything about the buildings themselves comes from
 ## data/minigames.json, so a fourth mini-game needs no change here.
 ##
-## The village geometry below is generated placeholder art. When the real
-## Kenney/Quaternius village arrives it becomes a scene instance and the rest of
-## this file is unaffected (§11).
+## The village is one model — ground, paths, fence, trees and all three buildings
+## baked into a single mesh. It replaced a procedurally generated village on
+## 2026-08-31; ASSETS.md records where it came from and what had to be repaired
+## before it could be used.
+##
+## What that changes here is mostly deletion. The ground, the stepping stones,
+## the undergrowth, the tree ring and the backdrop hills were each built in this
+## file and are now painted into the model. What stays is everything the *game*
+## needs and a picture cannot provide: where each building stands, how close the
+## child has to be for its prompt, what is unlocked, and what to suggest next.
+##
+## Buildings are not separate objects in that mesh and do not need to be. A child
+## never enters one from the village — they walk up, a prompt appears, and the
+## router loads a different scene (§6.3, §7.1). `Building` therefore places a
+## collider, a sign and a trigger at a position from data/minigames.json, and
+## draws no model of its own.
 
-## §7.1 asks for roughly 40 × 40 world units.
-const HALF_EXTENT := 20.0
-## The fence, which is both what the child sees and what stops them.
+## The model, and how big it is. §7.1 asks for roughly 40 × 40 units; this is 30,
+## because the buildings are a fixed fraction of the tile and at forty they came
+## out nearer ten metres across than the five to seven §11 asks for. A smaller
+## village also suits a child who has to cross it on a phone.
+const VILLAGE_MODEL := "res://assets/models/environment/village_market.glb"
+const HALF_EXTENT := 15.0
+
+## The fence, which is both what the child sees and what stops them. The inset is
+## measured off the model's own line of posts, not chosen — see fence_line().
 const FENCE_HEIGHT := 1.15
 const FENCE_THICKNESS := 0.55
-const FENCE_INSET := 1.4
+const FENCE_INSET := 0.9
 
-## How much clear ground a backdrop hill must leave outside the fence. A hill
-## that reaches over it stops being scenery and becomes a wall.
-const HILL_CLEARANCE := 6.0
+const PLAYER_START := Vector2(0.0, 6.0)
 
-## Trunk collision. Generous against the model's own trunk, because a child
-## walking a diagonal into a tree should be turned aside rather than snagged on
-## a cylinder narrower than the thing they can see.
-const TRUNK_RADIUS := 0.42
-const TRUNK_HEIGHT := 2.6
-const TREE_COUNT := 14
-const PLAYER_START := Vector2(0.0, 4.0)
-
-## Where the paths meet. Sitting it between the player's starting spot and the
-## buildings means the first thing a child sees is a junction with somewhere to
-## go, rather than an empty field.
-const PLAZA_CENTRE := Vector2(0.0, 1.5)
-const PLAZA_RADIUS := 3.4
-const PATH_WIDTH := 2.5
-
-## One seed for everything the village scatters, so the whole place is identical
-## every launch (§7.1) and any two parts of it that should agree, do.
-const GROUND_SEED := 20260830
-const STONE_SPACING := 1.9
-
-const TREE_MODELS: Array[String] = [
-	"res://assets/models/environment/tree_leafy.glb",
-	"res://assets/models/environment/tree_banana.glb",
+## Undergrowth sown over the model's lawn.
+##
+## The village mesh is at its weakest exactly where the child spends the most
+## time looking: the open middle is a flat expanse of pale green with nothing in
+## it, because an atlas split across 3,844 islands has no resolution to spare for
+## the biggest surface in the scene. Geometry is the cheap answer — the same
+## vertex-coloured tufts, bushes and flowers the Kebun already scatters, which
+## are crisp where the texture is soft and which match the child and Kanca rather
+## than the backdrop.
+##
+## Each entry is how many, how big, how far from a building, and how much to
+## favour the edges over the middle.
+const SOWN: Array[Dictionary] = [
+	{"id": "grass_tuft", "count": 340, "scale": Vector2(0.65, 1.20), "clearance": 2.6,
+		"near_edge": 0.30},
+	{"id": "flower_red", "count": 22, "scale": Vector2(0.85, 1.30), "clearance": 3.2,
+		"near_edge": 0.45},
+	{"id": "flower_purple", "count": 20, "scale": Vector2(0.85, 1.30), "clearance": 3.2,
+		"near_edge": 0.45},
+	{"id": "bush", "count": 14, "scale": Vector2(0.70, 1.20), "clearance": 4.0,
+		"near_edge": 0.7},
 ]
+
+## How far out the sown ground reaches. Short of the fence, because the model's
+## own planting is already thick there and doubling it makes a hedge.
+const SOWN_REACH := 11.5
+
+## Above this, a spot is a roof, a stall or a crate rather than lawn. The village
+## floor rolls by about a third of a metre; nothing is planted on anything higher.
+const SOWN_MAX_HEIGHT := 0.42
+
+const SOWN_SEED := 20260831
 
 @onready var _world: Node3D = $World
 @onready var _player: HubPlayer = $Player
@@ -58,6 +83,7 @@ const TREE_MODELS: Array[String] = [
 @onready var _enter_prompt: BigButton = $UI/SafeArea/Screen/EnterPrompt
 @onready var _celebration: CelebrationOverlay = $UI/Celebration
 
+var _ground_height: VillageHeightField = null
 var _buildings: Dictionary = {}
 var _nearby_game_id: String = ""
 var _pending_result: MiniGameResult = null
@@ -68,9 +94,13 @@ func _ready() -> void:
 	_player.camera = _camera
 	_player.warp_to(PLAYER_START)
 	_camera.target = _player
+	# Kept inside the fence, so pulling back never puts a tree between the child
+	# and the camera.
+	_camera.limit = fence_line() - 1.5
 	_zoom.camera = _camera
 	_gestures.camera = _camera
 	_kanca.target = _player
+
 	_kanca.position = Vector3(PLAYER_START.x - 1.6, 0.0, PLAYER_START.y + 0.6)
 
 	_enter_prompt.visible = false
@@ -80,11 +110,8 @@ func _ready() -> void:
 
 	_build_ground()
 	_build_boundary()
-	_build_stepping_stones()
-	_scatter_trees()
 	_build_buildings()
-	_scatter_undergrowth()
-	_build_backdrop()
+	_sow_undergrowth()
 
 	GameState.progress_changed.connect(_refresh_unlocks)
 	SceneRouter.mini_game_finished.connect(_on_mini_game_finished)
@@ -110,51 +137,53 @@ func _on_visibility_changed() -> void:
 # ---------------------------------------------------------------- village
 
 ## Where the fence stands, in world units from the centre. One function, because
-## the colliders, the fence panels and the scatter all have to agree about it and
-## a fence you can walk through is what happens when two of them do not.
+## the colliders and the model's own line of posts have to agree, and a fence you
+## can walk through is what happens when they do not. Measured off the model.
 func fence_line() -> float:
 	return HALF_EXTENT - FENCE_INSET
 
 
-## Where the paths run, as line segments. Derived from hub_position rather than
-## written down, so a fourth building gets a path to it for free — and the ground
-## and the stepping stones both read this, so they cannot disagree about where
-## the path is.
-func _path_layout() -> Array:
-	var layout: Array = []
-	for game_id: String in ContentDB.get_mini_game_ids():
-		var config: Dictionary = ContentDB.get_mini_game(game_id)
-		var raw: Array = config.get("hub_position", [0.0, 0.0]) as Array
-		var building: Vector2 = Vector2(float(raw[0]), float(raw[1]))
-		var footprint: Array = config.get("building_size", [6.0, 3.0, 5.0]) as Array
-
-		var towards_plaza: Vector2 = (PLAZA_CENTRE - building).normalized()
-		# Stop at the building's front rather than under it, so the path reads as
-		# arriving somewhere.
-		var arrival: Vector2 = building + towards_plaza * (float(footprint[2]) * 0.5 + 0.3)
-		if arrival.distance_to(PLAZA_CENTRE) < 0.5:
-			continue
-		layout.append({"from": PLAZA_CENTRE, "to": arrival, "width": PATH_WIDTH})
-	return layout
-
-
+## The village: one mesh for what is seen, the same mesh again for what is walked
+## on.
+##
+## The collider is the geometry rather than a flat box, which reverses what the
+## procedural village did. That box existed because the ground it stood in for
+## was decorative noise — a fifth of a metre of undulation nobody needed to walk
+## over, and flattening it meant no terrain edit could ever put a lip under a
+## four-year-old's feet. This ground is not that. It rises and falls by a third
+## of a metre, it has stalls and rocks standing on it, and a flat box would bury
+## the child's feet in exactly the way the old one was caught doing.
+##
+## The village casts real shadows. It carries some baked into its atlas, but they
+## are faint enough not to fight, and without a real set the buildings sit on the
+## grass like stickers — nothing in the scene tells you the Dapur is a solid
+## object three metres tall. One extra shadow pass over ten thousand triangles is
+## the cheapest depth available.
 func _build_ground() -> void:
-	var ground: MeshInstance3D = VillageGround.build(
-		HALF_EXTENT, PLAZA_CENTRE, PLAZA_RADIUS, _path_layout(), GROUND_SEED)
-	_world.add_child(ground)
-
-	# The visible ground rolls by a tenth of a metre; the one the child walks on
-	# does not. Keeping the collider a flat box means no amount of fiddling with
-	# the terrain can put a lip under a four-year-old's feet.
+	var village: Node3D = ModelKit.instantiate(VILLAGE_MODEL)
+	if village == null:
+		# §10.5: a missing asset is never fatal. Without the mesh there is nothing
+		# to see and nothing to stand on, so lay a flat floor and let the rest of
+		# the village — buildings, signs, prompts, unlocking — still work.
+		Log.w("No village model at %s — laying a bare floor instead" % VILLAGE_MODEL,
+			"Hub")
+		_add_flat_floor()
+		return
+	village.name = "Village"
+	_world.add_child(village)
+	var mesh: Mesh = ModelKit.load_mesh(VILLAGE_MODEL)
+	if mesh == null:
+		_add_flat_floor()
+		return
+	# Read once, into a grid, because the scatter below runs before the physics
+	# server has a frame to answer rays in.
+	_ground_height = VillageHeightField.new(mesh)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.name = "GroundBody"
 	body.collision_layer = 1
 	body.collision_mask = 0
 	var shape: CollisionShape3D = CollisionShape3D.new()
-	var box: BoxShape3D = BoxShape3D.new()
-	box.size = Vector3(HALF_EXTENT * 2.0, 0.6, HALF_EXTENT * 2.0)
-	shape.shape = box
-	shape.position.y = -0.3
+	shape.shape = mesh.create_trimesh_shape()
 	body.add_child(shape)
 	_world.add_child(body)
 
@@ -199,353 +228,102 @@ func _build_boundary() -> void:
 		_world.add_child(body)
 
 
-## Stepping stones along each path.
+## Scatters undergrowth across the model's lawn.
 ##
-## The paths themselves are painted into the ground now, which makes them soft
-## and a little vague — right for a worn track, but §7.1 leans on the paths for
-## wayfinding, and a child who cannot read has nothing else telling them where to
-## go. The stones put a hard, countable line back on top of the soft one.
-func _build_stepping_stones() -> void:
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = GROUND_SEED + 5
+## Placed against the height field rather than at y=0: the ground is real
+## geometry now and a plant dropped on the plane would be buried at one end of
+## the village and hovering at the other. Rejection sampling, like the Kebun's —
+## a tuft that cannot find anywhere legal is dropped rather than forced somewhere
+## wrong, because one fewer tuft costs nothing and a bush growing through the
+## Warung counter costs the whole illusion.
+func _sow_undergrowth() -> void:
+	if _ground_height == null or not _ground_height.is_ready():
+		return
 
-	var transforms: Array[Transform3D] = []
-	var colours: Array[Color] = []
-
-	for entry: Dictionary in _path_layout():
-		var from: Vector2 = entry["from"] as Vector2
-		var to: Vector2 = entry["to"] as Vector2
-		var run: float = from.distance_to(to)
-		var count: int = int(run / STONE_SPACING)
-		var along: Vector2 = (to - from).normalized()
-		var across: Vector2 = Vector2(-along.y, along.x)
-
-		for index: int in range(1, count):
-			var centre: Vector2 = from + along * (float(index) * STONE_SPACING)
-			# Off the centre line, alternating, the way stones get placed by
-			# someone walking rather than by a surveyor.
-			centre += across * rng.randf_range(-0.55, 0.55)
-			_add_stone(transforms, colours, centre, rng)
-
-	# A few loose in the plaza. Deliberately not a ring -- evenly spaced stones
-	# around a circle read as a fairy ring, which is a thing someone built, not a
-	# place that got worn.
-	for index: int in range(7):
-		var angle: float = rng.randf_range(0.0, TAU)
-		var reach: float = sqrt(rng.randf()) * (PLAZA_RADIUS - 0.6)
-		_add_stone(transforms, colours, PLAZA_CENTRE + Vector2(cos(angle), sin(angle)) * reach, rng)
-
-	var stones: MultiMeshInstance3D = VillageScatter.instance_model(
-		_stone_mesh(), transforms, colours, false)
-	if stones != null:
-		stones.name = "SteppingStones"
-		_world.add_child(stones)
-
-
-## One flagstone mesh, reused. Five sides, not twenty: these are flagstones, not
-## dinner plates, and forty-odd of them were forty-odd draw calls when each
-## carried its own mesh and its own material.
-func _stone_mesh() -> Mesh:
-	var slab: CylinderMesh = CylinderMesh.new()
-	slab.top_radius = 0.30
-	slab.bottom_radius = 0.28
-	slab.height = 0.07
-	slab.radial_segments = 5
-	slab.rings = 0
-	slab.material = _stone_material()
-	return slab
-
-
-func _stone_material() -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	# Per-instance colour carries the variation now, so the material itself is
-	# white and every stone multiplies it down to its own grey.
-	material.vertex_color_use_as_albedo = true
-	material.albedo_color = Color.WHITE
-	material.roughness = 1.0
-	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	return material
-
-
-func _add_stone(transforms: Array[Transform3D], colours: Array[Color], centre: Vector2,
-		rng: RandomNumberGenerator) -> void:
-	var basis: Basis = Basis(Vector3.UP, rng.randf_range(0.0, TAU))
-	basis = basis.scaled(Vector3(rng.randf_range(0.78, 1.35), 1.0,
-		rng.randf_range(0.70, 1.30)))
-	transforms.append(Transform3D(basis, Vector3(centre.x, 0.03, centre.y)))
-
-	# Muted and varied. A bright stone reads as a plate left on the grass.
-	var tint: float = rng.randf_range(-0.16, 0.10)
-	var base: Color = Palette.STONE.darkened(0.28)
-	colours.append(base.lightened(maxf(tint, 0.0)).darkened(maxf(-tint, 0.0)))
-
-
-## Hills and far trees beyond the boundary.
-##
-## Nothing here is reachable and nothing collides. It exists because the village
-## ends at a hedge, and a hedge with empty sky above it tells a child exactly how
-## big the world is. Something behind it -- anything -- turns a boundary into a
-## horizon.
-##
-## Deliberately hazy and low-contrast. These sit behind everything the child can
-## actually touch, and if they read as sharply as the Warung does they compete
-## with it.
-func _build_backdrop() -> void:
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = GROUND_SEED + 77
-
-	# A close ring of jungle, then hills behind it. Two distances rather than one,
-	# because a single band reads as a painted wall.
-	#
-	# Leafy trees only, and no shadows. A banana palm is six times the triangles
-	# of a leafy tree and none of that detail survives being thirty metres away;
-	# the shadows fall outside the fence where nobody can see them, and paying for
-	# them means drawing the whole backdrop a second time.
-	var placements: Array[Array] = []
-	for _index: int in range(TREE_MODELS.size()):
-		placements.append([] as Array[Transform3D])
-
-	for index: int in range(24):
-		var angle: float = TAU * float(index) / 24.0 + rng.randf_range(-0.05, 0.05)
-		var reach: float = HALF_EXTENT + rng.randf_range(2.2, 6.0)
-		var basis: Basis = Basis(Vector3.UP, rng.randf_range(0.0, TAU))
-		basis = basis.scaled(Vector3.ONE * rng.randf_range(1.15, 1.85))
-		(placements[0] as Array[Transform3D]).append(Transform3D(basis,
-			Vector3(cos(angle) * reach, -0.4, sin(angle) * reach)))
-
-	_plant(placements, [Palette.HILL_HAZE.lerp(Color.WHITE, 0.45)], false, "FarJungle")
-
-	# Every hill into one mesh. Twenty-six cones is twenty-six draw calls for
-	# something the child can never reach and never looks at directly.
-	var surface: SurfaceTool = SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	surface.set_smooth_group(-1)
-	for index: int in range(26):
-		var angle: float = TAU * float(index) / 26.0 + rng.randf_range(-0.08, 0.08)
-		var reach: float = HALF_EXTENT + rng.randf_range(20.0, 44.0)
-		var height: float = rng.randf_range(6.0, 17.0)
-
-		# A hill's radius has to stop short of the village, and nothing was
-		# checking. At the old numbers a tall one could be 40 metres across and
-		# 36 from the centre, which put its near slope *inside* the fence — an
-		# unshaded, uncollidable wall of dark green that the child could walk
-		# into and appear to sink through.
-		var clearance: float = reach - HALF_EXTENT - HILL_CLEARANCE
-		var radius: float = minf(rng.randf_range(height * 1.3, height * 2.4), clearance)
-		if radius < 3.0:
-			continue
-
-		# The further away, the hazier -- one lerp, and it does the whole job of
-		# making the distance read as distance.
-		var haze: float = clampf((reach - HALF_EXTENT - 20.0) / 24.0, 0.0, 1.0)
-		_add_hill(surface, Vector2(cos(angle) * reach, sin(angle) * reach), height,
-			radius, Palette.HILL_FAR.lerp(Palette.HILL_HAZE, haze), rng)
-	surface.generate_normals()
-
-	var hills: MeshInstance3D = MeshInstance3D.new()
-	hills.name = "Hills"
-	hills.mesh = surface.commit()
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.vertex_color_use_as_albedo = true
-	material.albedo_color = Color.WHITE
-	material.roughness = 1.0
-	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	# Unshaded: a hill lit by the same sun as the village competes with it, and
-	# these are supposed to sit quietly behind everything.
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	hills.material_override = material
-	hills.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_world.add_child(hills)
-
-
-## A faceted cone written into a shared surface. Six or seven sides, so it reads
-## as a low-poly hill rather than a smooth heap.
-func _add_hill(surface: SurfaceTool, centre: Vector2, height: float, radius: float,
-		colour: Color, rng: RandomNumberGenerator) -> void:
-	var sides: int = rng.randi_range(6, 8)
-	var base: Vector3 = Vector3(centre.x, 0.0, centre.y)
-	var peak: Vector3 = base + Vector3(rng.randf_range(-0.2, 0.2) * radius, height,
-		rng.randf_range(-0.2, 0.2) * radius)
-
-	var rim: Array[Vector3] = []
-	for index: int in range(sides):
-		var angle: float = TAU * float(index) / float(sides)
-		var wobble: float = rng.randf_range(0.78, 1.22)
-		rim.append(base + Vector3(cos(angle) * radius * wobble, -1.5,
-			sin(angle) * radius * wobble))
-
-	for index: int in range(sides):
-		var a: Vector3 = rim[index]
-		var b: Vector3 = rim[(index + 1) % sides]
-		# Sunlit faces lighter, shaded faces darker, decided by which way the
-		# facet points rather than by the light -- these are unshaded, and too
-		# far away for real shading to give them any shape.
-		var facing: float = ((a + b) * 0.5 - peak).normalized().dot(Vector3(-0.4, 0.0, -0.9))
-		var tint: Color = colour.lightened(clampf(facing, 0.0, 1.0) * 0.16)
-		tint = tint.darkened(clampf(-facing, 0.0, 1.0) * 0.14)
-		surface.set_color(tint.srgb_to_linear())
-		surface.add_vertex(peak)
-		surface.add_vertex(a)
-		surface.add_vertex(b)
-
-
-## Bushes, ferns, flowers, grass and stones, plus the bamboo fence.
-##
-## Runs after the buildings, because it needs to know where they stand: a fern
-## growing through the Warung counter is the sort of thing that only shows up in
-## a screenshot after the fact.
-func _scatter_undergrowth() -> void:
-	var blocked: Array = [{"centre": PLAYER_START, "radius": 2.2}]
+	# Buildings, and the patch of grass the child is standing on when the village
+	# loads. A tuft in front of a door is untidy; a bush on top of the avatar the
+	# first time a four-year-old sees themselves is not.
+	var centres: Array[Vector2] = [PLAYER_START]
 	for game_id: String in ContentDB.get_mini_game_ids():
-		var config: Dictionary = ContentDB.get_mini_game(game_id)
-		var raw: Array = config.get("hub_position", [0.0, 0.0]) as Array
-		var footprint: Array = config.get("building_size", [6.0, 3.0, 5.0]) as Array
-		# Circle round the footprint's longest side. Generous rather than exact —
-		# a gap of clear ground round a building reads as a swept yard.
-		var reach: float = maxf(float(footprint[0]), float(footprint[2])) * 0.62 + 0.9
-		blocked.append({"centre": Vector2(float(raw[0]), float(raw[1])), "radius": reach})
+		var raw: Array = ContentDB.get_mini_game(game_id).get("hub_position", [0.0, 0.0]) as Array
+		centres.append(Vector2(float(raw[0]), float(raw[1])))
 
-	_world.add_child(VillageScatter.build(HALF_EXTENT, FENCE_INSET,
-		PLAZA_CENTRE, PLAZA_RADIUS, _path_layout(), blocked, GROUND_SEED))
-
-
-## Deterministic scatter — the village looks the same every launch, which matters
-## when a child is learning where things are.
-func _scatter_trees() -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = GROUND_SEED
+	var sown: Node3D = Node3D.new()
+	sown.name = "Undergrowth"
+	_world.add_child(sown)
 
-	# Grouped by model rather than placed one at a time. Fourteen trees is not
-	# many, but each carries a trunk and a canopy surface and each was its own
-	# node -- and the same loop below plants thirty more in the backdrop.
-	var placements: Array[Array] = []
-	for _index: int in range(TREE_MODELS.size()):
-		placements.append([] as Array[Transform3D])
+	for kind: Dictionary in SOWN:
+		# A stream per type, so changing how many flowers there are does not
+		# reshuffle every tuft in the village.
+		rng.seed = SOWN_SEED + hash(kind["id"])
+		var transforms: Array[Transform3D] = _sow_one(kind, centres, rng)
+		var node: MultiMeshInstance3D = VillageScatter.instance_model(
+			ModelKit.load_mesh("res://assets/models/environment/%s.glb" % kind["id"]),
+			transforms, [], false)
+		if node != null:
+			node.name = String(kind["id"]).capitalize()
+			sown.add_child(node)
 
-	for i: int in range(TREE_COUNT):
-		var x: float = rng.randf_range(-HALF_EXTENT + 3.0, HALF_EXTENT - 3.0)
-		var z: float = rng.randf_range(-HALF_EXTENT + 3.0, HALF_EXTENT - 3.0)
-		# Keep the middle clear so trees never sit on top of a building or the
-		# path between them.
-		if absf(x) < 13.0 and z < -2.0:
+
+func _sow_one(kind: Dictionary, centres: Array[Vector2],
+		rng: RandomNumberGenerator) -> Array[Transform3D]:
+	var transforms: Array[Transform3D] = []
+	var wanted: int = int(kind["count"])
+	var clearance: float = float(kind["clearance"])
+	var near_edge: float = float(kind["near_edge"])
+	var scale_range: Vector2 = kind["scale"] as Vector2
+
+	var attempts: int = 0
+	var limit: int = wanted * 30
+	while transforms.size() < wanted and attempts < limit:
+		attempts += 1
+		var point: Vector2 = Vector2(rng.randf_range(-SOWN_REACH, SOWN_REACH),
+			rng.randf_range(-SOWN_REACH, SOWN_REACH))
+
+		# Biasing outward is what leaves an open middle to walk in instead of an
+		# even sprinkle that reads as wallpaper.
+		if near_edge > 0.0:
+			var pull: float = maxf(absf(point.x), absf(point.y)) / SOWN_REACH
+			if rng.randf() > lerpf(1.0 - near_edge, 1.0, pull):
+				continue
+
+		var blocked: bool = false
+		for centre: Vector2 in centres:
+			if point.distance_to(centre) < clearance:
+				blocked = true
+				break
+		if blocked:
 			continue
-		if Vector2(x, z).distance_to(PLAYER_START) < 5.0:
+
+		var height: float = _ground_height.height_at(point)
+		if height > SOWN_MAX_HEIGHT:
 			continue
 
 		var basis: Basis = Basis(Vector3.UP, rng.randf_range(0.0, TAU))
-		basis = basis.scaled(Vector3.ONE * rng.randf_range(0.82, 1.18))
-		var slot: int = i % TREE_MODELS.size()
-		(placements[slot] as Array[Transform3D]).append(
-			Transform3D(basis, Vector3(x, 0.0, z)))
+		basis = basis.scaled(Vector3.ONE * rng.randf_range(scale_range.x, scale_range.y))
+		# Sunk a centimetre: a plant whose base sits exactly on the surface shows
+		# a hairline of ground through the gap between its lowest facets.
+		transforms.append(Transform3D(basis, Vector3(point.x, height - 0.01, point.y)))
 
-	_plant(placements, [], true, "Trees", true)
-
-
-## Turns per-model placement lists into MultiMesh nodes, falling back to the
-## generated stand-in tree when a model is missing (10.5).
-func _plant(placements: Array[Array], colours: Array[Color], casts_shadow: bool,
-		group_name: String, solid: bool = false) -> void:
-	var group: Node3D = Node3D.new()
-	group.name = group_name
-	_world.add_child(group)
-
-	for slot: int in range(TREE_MODELS.size()):
-		var transforms: Array[Transform3D] = placements[slot] as Array[Transform3D]
-		if transforms.is_empty():
-			continue
-
-		var mesh: Mesh = ModelKit.load_mesh(TREE_MODELS[slot])
-		if mesh != null:
-			var tint: Array[Color] = []
-			if not colours.is_empty():
-				for _index: int in range(transforms.size()):
-					tint.append(colours[0])
-			var node: MultiMeshInstance3D = VillageScatter.instance_model(
-				mesh, transforms, tint, casts_shadow)
-			if node != null:
-				node.name = "Model%d" % slot
-				group.add_child(node)
-			if solid:
-				_add_trunk_colliders(group, transforms, slot)
-			continue
-
-		# No model: the stand-in is a node, so these go back to being one each.
-		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-		rng.seed = GROUND_SEED + slot
-		for transform: Transform3D in transforms:
-			var tree: Node3D = _build_tree(slot, rng)
-			tree.transform = transform
-			group.add_child(tree)
+	return transforms
 
 
-## A trunk collider per tree.
-##
-## MultiMesh draws hundreds of copies from one mesh and carries no collision at
-## all — which is why the village's trees could be walked straight through. The
-## bodies have to be made separately, one per instance.
-##
-## Only the trunk, not the canopy. A child brushing past leaves should not be
-## stopped by them, and a collider that matches the crown means being blocked by
-## something a metre above your head.
-func _add_trunk_colliders(group: Node3D, transforms: Array[Transform3D], slot: int) -> void:
-	for index: int in range(transforms.size()):
-		var transform: Transform3D = transforms[index]
-		var scale: float = transform.basis.get_scale().x
-
-		var body: StaticBody3D = StaticBody3D.new()
-		body.name = "Trunk%d_%d" % [slot, index]
-		body.collision_layer = 1
-		body.collision_mask = 0
-		body.position = transform.origin
-
-		var shape: CollisionShape3D = CollisionShape3D.new()
-		var cylinder: CylinderShape3D = CylinderShape3D.new()
-		cylinder.radius = TRUNK_RADIUS * scale
-		cylinder.height = TRUNK_HEIGHT * scale
-		shape.shape = cylinder
-		shape.position.y = cylinder.height * 0.5
-		body.add_child(shape)
-		group.add_child(body)
+func _add_flat_floor() -> void:
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = "GroundBody"
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = Vector3(HALF_EXTENT * 2.0, 0.6, HALF_EXTENT * 2.0)
+	shape.shape = box
+	shape.position.y = -0.3
+	body.add_child(shape)
+	_world.add_child(body)
 
 
-## The real tree if one exists, otherwise the old cylinder-and-sphere stand-in.
-## Alternates the two types: twelve copies of one tree is what makes a place look
-## generated rather than built.
-func _build_tree(index: int, rng: RandomNumberGenerator) -> Node3D:
-	var path: String = TREE_MODELS[index % TREE_MODELS.size()]
-	var instance: Node3D = ModelKit.instantiate(path)
-	if instance != null:
-		return instance
-
-	var tree: Node3D = Node3D.new()
-
-	var trunk: MeshInstance3D = MeshInstance3D.new()
-	var trunk_mesh: CylinderMesh = CylinderMesh.new()
-	trunk_mesh.top_radius = 0.18
-	trunk_mesh.bottom_radius = 0.22
-	trunk_mesh.height = 1.5
-	trunk_mesh.radial_segments = 6
-	trunk_mesh.rings = 0
-	trunk.mesh = trunk_mesh
-	trunk.material_override = PlaceholderFactory.get_flat_material(Palette.WOOD)
-	trunk.position.y = 0.75
-	trunk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	tree.add_child(trunk)
-
-	var crown: MeshInstance3D = MeshInstance3D.new()
-	var crown_mesh: SphereMesh = SphereMesh.new()
-	crown_mesh.radius = 1.05
-	crown_mesh.height = 1.9
-	crown_mesh.radial_segments = 8
-	crown_mesh.rings = 4
-	crown.mesh = crown_mesh
-	crown.material_override = PlaceholderFactory.get_flat_material(Palette.GRASS_DARK)
-	crown.position.y = 2.0
-	crown.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	tree.add_child(crown)
-
-	return tree
-
+# ---------------------------------------------------------------- buildings
 
 func _build_buildings() -> void:
 	for game_id: String in ContentDB.get_mini_game_ids():
@@ -663,6 +441,9 @@ func _on_transition_finished() -> void:
 		return
 	var result: MiniGameResult = _pending_result
 	_pending_result = null
+	# He cheers behind the overlay, so the village is already celebrating when it
+	# is dismissed rather than snapping back to a companion standing still.
+	_kanca.celebrate()
 	_celebration.show_result(result)
 
 

@@ -30,12 +30,19 @@ import kanca_build as kb  # noqa: E402
 
 
 def _blades(bm, count, material_index, length, width, spread, lean, seed=0.0,
-            segments=4):
+            segments=4, radial=4):
     """A fan of tapered blades rising from one point and arching outwards.
 
     Grass and fern fronds are the same shape at different scales. Blades rather
     than a blob because these sit at the camera's near edge, where a lump of
     green reads as a lump of green.
+
+    `radial` is how many sides each blade has, and three is not one of the
+    useful answers however tempting the saving is. The section is a superellipse
+    flattened to a fifth of its width, so four sides land on its corners and give
+    a blade; three land two points along one flat side and one on an edge, and
+    give a sliver whose face normals are noise. Grass built that way rendered as
+    pale straw and it was not the colour that was wrong.
     """
     for index in range(count):
         # Deterministic pseudo-spread: no RNG, so a rebuild is byte-identical.
@@ -65,7 +72,7 @@ def _blades(bm, count, material_index, length, width, spread, lean, seed=0.0,
             taper = math.sin(math.pi * min(max(t * 0.75 + 0.12, 0.02), 0.99)) ** 0.7
             return kb.superellipse(theta, w * taper, w * taper * 0.22, squareness=2.4)
 
-        kb.sweep(bm, spine, section, 4, material_index=material_index, cap_ends=True)
+        kb.sweep(bm, spine, section, radial, material_index=material_index, cap_ends=True)
 
 
 def build_bush():
@@ -112,11 +119,29 @@ def build_fern():
 
 def build_grass_tuft():
     """The cheapest thing here and the one that does the most. Scattered thickly
-    it turns a painted floor into ground."""
-    blade = kb.make_material("grass_blade", (0.494, 0.702, 0.267), roughness=0.95)
+    it turns a painted floor into ground.
+
+    Rebuilt smaller. It was four arched blades 0.40m long, scattered at up to
+    1.85x - three quarters of a metre of grass standing against a 1.15m child,
+    which is most of why their feet kept disappearing into it. Six straight
+    blades of a third of a metre read as a lawn instead.
+
+    Straight rather than arched because at this size the arch was never visible:
+    it cost a spine segment per blade and bought a curve two centimetres deep.
+    That pays for the two extra blades and most of the extra tufts.
+    """
+    # Much darker than the meadow it stands in, and darker than looks right in
+    # Blender. Vertex colours reach the Compatibility renderer as linear values
+    # whatever space they were authored in (see ASSETS.md), so every .glb in this
+    # project renders lighter and flatter than its swatch - which is why the old
+    # tufts came out as pale straw on a green field. Compensated here rather than
+    # in the pipeline: changing what bake_vertex_colours writes would restyle
+    # every model in the game at once, and that is a decision, not a fix.
+    blade = kb.make_material("grass_blade", (0.243, 0.400, 0.157), roughness=0.95)
 
     bm = bmesh.new()
-    _blades(bm, 4, 0, length=0.40, width=0.050, spread=0.75, lean=1.0, segments=2)
+    _blades(bm, 6, 0, length=0.34, width=0.042, spread=0.70, lean=1.0,
+            segments=1)
 
     obj = kb.mesh_from_bmesh("grass_tuft", bm, [blade])
     kb.select_only(obj)
@@ -126,7 +151,7 @@ def build_grass_tuft():
     # colours were doing their job long before this line was right - what was
     # wrong was that the normals were averaging the facets away.
     kb.shade(obj, 1.0)
-    kb.bake_vertex_colours(obj, base=0.54, facet_jitter=0.10, seed=17)
+    kb.bake_vertex_colours(obj, base=0.66, facet_jitter=0.07, seed=17)
     return obj
 
 

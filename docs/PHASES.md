@@ -17,7 +17,7 @@ If the two ever disagree, **PLAN.md wins** and this file gets fixed.
 | P3 | Warung vertical slice (levels 1–3) | M2 | Built, awaiting child testing | No |
 | P4a | Kebun + economy chain | M4 (part) | Built, awaiting child testing | No |
 | P4b | Dapur | M4 (part) | Not started | No |
-| P5 | Audio & identity (real dubbing, Kanca model, icon) | M3 | Not started | **Yes** |
+| P5 | Audio & identity (real dubbing, Kanca model, icon) | M3 | Identity built, audio not started | **Yes** — voice, and a rig |
 | P6 | Polish, settings, parental gate, performance | M5 | Not started | Partly |
 | P7 | Compliance & release | M6 | Not started | **Yes** |
 
@@ -233,11 +233,21 @@ Warung shelf as things to sell.
 **Done when:** the Warung plays start to finish with real voice and the real mascot,
 fully usable with every string stripped out.
 
-**Status:** the manifest is written and the tooling is ready — 65 lines, 112 clips
-once variants are counted. `docs/DUBBING.md` is generated from it, and
-`tools/check_voice_coverage.tscn` currently reports 0 of 65 recorded. Nothing in
-the engine is waiting on any of it: an unrecorded line still queues, still ducks
-the music and still takes its stated duration.
+**Status — identity: built.** The icon, the launcher icons, the boot splash and
+the wordmark are in, all rendered from the mascot model rather than drawn beside
+it, and `tools/check_branding.tscn` is in `run_tests` — including the 48×48
+silhouette test §11.1 asks for, which is now measured rather than eyeballed. The
+app no longer ships a placeholder icon.
+
+What is still open from this phase is the half that needs a person. The rig, the
+five animations and the four expressions cannot come out of a generator script,
+so Kanca still points by rotating.
+
+**Status — audio: not started.** The manifest is written and the tooling is ready
+— 65 lines, 112 clips once variants are counted. `docs/DUBBING.md` is generated
+from it, and `tools/check_voice_coverage.tscn` currently reports 0 of 65
+recorded. Nothing in the engine is waiting on any of it: an unrecorded line still
+queues, still ducks the music and still takes its stated duration.
 
 ---
 

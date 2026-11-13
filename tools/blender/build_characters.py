@@ -1,5 +1,12 @@
 """Builds the village's people in Blender. Developer tool.
 
+**Kanca is not built here any more.** He was `build_kanca()` in this file —
+first upright, then on four legs — and became a supplied model on 2026-08-31;
+see `tools/blender/import_mascot.py` and the AI-generated art section of
+ASSETS.md. The builder was deleted rather than left unused, because it wrote to
+the same `assets/models/characters/kanca.glb` the importer does, and `--all`
+would have quietly replaced the shipped mascot with a kancil nobody asked for.
+
     blender --background --factory-startup --python tools/blender/build_characters.py -- \
         --all --out-dir assets/models/characters --preview /tmp/characters.png
 
@@ -308,141 +315,48 @@ def build_customer_bapak():
         trousers=True)
 
 
-def build_kanca():
-    """Kanca: the kancil who walks with the child (PLAN.md 7.1, 11.1).
+def _spine(points):
+    """(position, ...) samples along a curve -> the (t, position, tangent) list
+    `kb.sweep` wants, with tangents from central differences."""
+    positions = [Vector(point) for point in points]
+    spine = []
+    for index, position in enumerate(positions):
+        ahead = positions[min(index + 1, len(positions) - 1)]
+        behind = positions[max(index - 1, 0)]
+        tangent = ahead - behind
+        if tangent.length < 1e-6:
+            tangent = Vector((0.0, 1.0, 0.0))
+        spine.append((index / (len(positions) - 1.0), position, tangent.normalized()))
+    return spine
 
-    Two and a half heads tall, which 11.1 asks for and which is the whole shape
-    of him - at that proportion the head *is* the silhouette, and the body is
-    something for it to sit on. It is also why he is built upright rather than on
-    four legs: two and a half heads only makes sense standing, and 7.1 needs him
-    to point at things.
 
-    A kancil is not a deer. No antlers - the males have small tusks and the
-    animal is the size of a cat - and the markings that identify one are the pale
-    throat stripes and the white belly, not the coat colour. Both are here,
-    because the coat alone is a brown blob.
+def _tapered(table, squareness=2.1):
+    """(t, half_width, half_height) samples -> a section function for kb.sweep.
 
-    The coat is tied to Palette.SIGNATURE, since 11.1 wants one signature colour
-    running through the icon, the loading screen and the buttons. Muted a little
-    from the UI orange: a character wearing a button colour at full strength
-    looks like a button.
-
-    What this is not: rigged, animated, or capable of the four expressions 11.1
-    asks for. Those need a rig, and a script that writes vertices cannot give you
-    one. This is the model, not the performance.
+    A body is not a tube of constant radius and it is not a cone either. What
+    makes an animal read is where it is deepest and where it pinches, and this is
+    the cheapest way to say so: five numbers down the length.
     """
-    coat = kb.make_material("kanca_coat", (0.898, 0.616, 0.278), roughness=0.85)
-    coat_dark = kb.make_material("kanca_coat_dark", (0.749, 0.478, 0.196), roughness=0.85)
-    cream = kb.make_material("kanca_cream", (0.976, 0.945, 0.878), roughness=0.85)
-    hoof = kb.make_material("kanca_hoof", (0.231, 0.176, 0.149), roughness=0.7)
-    eye_white = kb.make_material("kanca_eye", (0.984, 0.980, 0.973), roughness=0.4)
-    eye_dark = kb.make_material("kanca_pupil", (0.110, 0.086, 0.078), roughness=0.35)
-    inner_ear = kb.make_material("kanca_inner_ear", (0.855, 0.588, 0.522), roughness=0.85)
-
-    COAT, COAT_DARK, CREAM, HOOF, WHITE, PUPIL, INNER = 0, 1, 2, 3, 4, 5, 6
-
-    HEIGHT = 0.85
-    head_size = HEIGHT * 0.42
-    head_centre = HEIGHT - head_size * 0.52
-    shoulder_z = head_centre - head_size * 0.60
-    hip_z = HEIGHT * 0.22
-    foot_z = HEIGHT * 0.030
-
-    bm = bmesh.new()
-
-    # Legs: short and slender, the one thing a kancil has in common with a deer.
-    for side in (-1.0, 1.0):
-        x = side * HEIGHT * 0.072
-        add_limb(bm, (x, 0.0, foot_z), (x * 0.92, 0.0, hip_z + HEIGHT * 0.02),
-                 HEIGHT * 0.040, HEIGHT * 0.052, COAT, segments=7)
-        kb.add_blob(bm, (x, HEIGHT * 0.020, foot_z * 0.7), HEIGHT * 0.050, HOOF,
-                    squash=(1.0, 1.5, 0.7))
-
-    # Body: an egg, wider at the hips. A kancil's back is rounded, and a straight
-    # torso reads as a person in a costume.
-    add_limb(bm, (0.0, 0.0, hip_z - HEIGHT * 0.05), (0.0, 0.0, shoulder_z + HEIGHT * 0.02),
-             HEIGHT * 0.135, HEIGHT * 0.112, COAT, segments=10, squareness=2.1, flatten=0.82)
-    # Pale belly, sitting just proud of the coat.
-    # Stops at the belly. Run down to the hips and it reads as an apron rather
-    # than an underside.
-    add_limb(bm, (0.0, HEIGHT * 0.080, hip_z + HEIGHT * 0.045),
-             (0.0, HEIGHT * 0.070, shoulder_z - HEIGHT * 0.015),
-             HEIGHT * 0.082, HEIGHT * 0.070, CREAM, segments=8, squareness=2.0, flatten=0.50)
-
-    # Forelegs, short and held forward, so he can be seen to point.
-    for side in (-1.0, 1.0):
-        shoulder = Vector((side * HEIGHT * 0.115, 0.0, shoulder_z - HEIGHT * 0.01))
-        paw = Vector((side * HEIGHT * 0.145, HEIGHT * 0.030, hip_z + HEIGHT * 0.03))
-        add_limb(bm, shoulder, paw, HEIGHT * 0.048, HEIGHT * 0.034, COAT, segments=6)
-        kb.add_blob(bm, paw, HEIGHT * 0.044, HOOF, squash=(0.9, 1.0, 0.9))
-
-    # Neck, then the head.
-    add_limb(bm, (0.0, HEIGHT * 0.01, shoulder_z), (0.0, HEIGHT * 0.012, shoulder_z + HEIGHT * 0.06),
-             HEIGHT * 0.052, HEIGHT * 0.048, COAT, segments=8)
-    kb.add_blob(bm, (0.0, 0.0, head_centre), head_size * 0.5, COAT,
-                squash=(1.0, 0.96, 0.98), subdivisions=2)
-
-    # Snout: tapering forward and down. This is the profile that says kancil
-    # rather than bear, and it is worth more than the ears.
-    add_limb(bm, (0.0, head_size * 0.14, head_centre - head_size * 0.04),
-             (0.0, head_size * 0.72, head_centre - head_size * 0.22),
-             head_size * 0.30, head_size * 0.150, COAT, segments=8, flatten=0.86)
-    kb.add_blob(bm, (0.0, head_size * 0.70, head_centre - head_size * 0.21),
-                head_size * 0.135, CREAM, squash=(1.0, 0.9, 0.82))
-    kb.add_blob(bm, (0.0, head_size * 0.80, head_centre - head_size * 0.19),
-                head_size * 0.085, HOOF, squash=(1.2, 0.85, 0.72))
-
-    # A pale bib across the chest. The first version of this was two narrow
-    # stripes down the throat, which is the marking a real kancil has - and
-    # standing proud of the neck at this scale they read as a pair of fangs. The
-    # identifying detail is not worth the face it gave him.
-    kb.add_blob(bm, (0.0, HEIGHT * 0.088, shoulder_z - HEIGHT * 0.045),
-                HEIGHT * 0.078, CREAM, squash=(1.15, 0.42, 1.05))
-
-    # Ears: upright ovals, turned outwards. Most of the 48px silhouette.
-    for side in (-1.0, 1.0):
-        base = Vector((side * head_size * 0.30, -head_size * 0.06,
-                       head_centre + head_size * 0.36))
-        tip = Vector((side * head_size * 0.52, -head_size * 0.08,
-                      head_centre + head_size * 0.62))
-        # Wide and short. Long uprights read as a rabbit, and the animal this is
-        # meant to be has neither the ears nor the antlers people expect of it.
-        add_limb(bm, base, tip, head_size * 0.215, head_size * 0.175, COAT_DARK,
-                 segments=7, flatten=0.34)
-        add_limb(bm, base + Vector((0.0, head_size * 0.040, 0.0)),
-                 tip + Vector((0.0, head_size * 0.035, 0.0)),
-                 head_size * 0.135, head_size * 0.105, INNER, segments=6, flatten=0.28)
-
-    # Eyes, the same dark almond the people have - a white sclera is noise at the
-    # size anyone actually sees him.
-    for side in (-1.0, 1.0):
-        eye = Vector((side * head_size * 0.235, head_size * 0.375,
-                      head_centre + head_size * 0.055))
-        kb.add_blob(bm, eye, head_size * 0.125, PUPIL, squash=(0.92, 0.36, 1.22),
-                    subdivisions=2)
-        kb.add_blob(bm, eye + Vector((side * head_size * 0.038, head_size * 0.032,
-                                      head_size * 0.048)),
-                    head_size * 0.044, WHITE, squash=(1.0, 0.6, 1.0), subdivisions=2)
-
-    # A stub of a tail. A kancil's is tiny, and leaving it off reads as missing.
-    kb.add_blob(bm, (0.0, -HEIGHT * 0.115, shoulder_z - HEIGHT * 0.06), HEIGHT * 0.045,
-                CREAM, squash=(0.9, 0.8, 1.1))
-
-    obj = kb.mesh_from_bmesh("kanca", bm,
-                             [coat, coat_dark, cream, hoof, eye_white, eye_dark, inner_ear])
-    kb.select_only(obj)
-    kb.scale_to_longest_side(obj, HEIGHT)
-    kb.place_origin_at_base(obj)
-    kb.shade(obj, 1.0)
-    kb.bake_vertex_colours(obj, base=0.70, facet_jitter=0.04, seed=71)
-    return obj
+    def section(t, theta):
+        for index in range(len(table) - 1):
+            low_t, low_w, low_h = table[index]
+            high_t, high_w, high_h = table[index + 1]
+            if t <= high_t or index == len(table) - 2:
+                span = max(high_t - low_t, 1e-6)
+                k = min(max((t - low_t) / span, 0.0), 1.0)
+                # Smoothstep, so the joins between samples do not show as creases.
+                k = k * k * (3.0 - 2.0 * k)
+                return kb.superellipse(theta, low_w + (high_w - low_w) * k,
+                                       low_h + (high_h - low_h) * k,
+                                       squareness=squareness)
+        return kb.superellipse(theta, table[-1][1], table[-1][2], squareness=squareness)
+    return section
 
 
 BUILDERS = {
     "cust_anak": build_customer_anak,
     "cust_bapak": build_customer_bapak,
     "cust_ibu": build_customer_ibu,
-    "kanca": build_kanca,
     "player": build_player,
 }
 

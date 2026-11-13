@@ -4,20 +4,36 @@ extends Control
 ##
 ## Its whole job is to warm the content cache and hand over to SceneRouter. It is
 ## freed by the router once the hub exists and is never returned to.
+##
+## What it draws is the same image the engine drew for itself a moment earlier —
+## `application/boot_splash/image`, over the same `bg_color`. Two pictures of the
+## brand, however close, produce a visible jump at the handover; one picture
+## produces none, and the seam a child would notice is the one nobody planned.
 
 ## Long enough that the brand registers, short enough that nobody is waiting.
 ## PLAN.md §4.2 budgets under five seconds from cold start to hub, and §3.4
 ## forbids making a child wait in real time for anything.
 const MINIMUM_SPLASH_SECONDS := 0.6
 
-@onready var _logo: TextureRect = $Centre/Logo
+@onready var _lockup: TextureRect = $Lockup
+@onready var _fallback: CenterContainer = $Centre
+@onready var _fallback_logo: TextureRect = $Centre/Logo
 
 
 func _ready() -> void:
 	Log.i("Kanca %s starting" % ProjectSettings.get_setting("application/config/version", "?"), "Boot")
 
-	# Placeholder mark, replaced by the real mascot once it is commissioned (§11.1).
-	_logo.texture = PlaceholderFactory.build_swatch_icon("kanca", Palette.SIGNATURE, 256)
+	# Filling the viewport rather than centred at its own size, because that is
+	# what the engine does with the same image a moment earlier. Anything else
+	# makes the logo change size on the frame this scene appears.
+	var lockup: Texture2D = PlaceholderFactory.build_splash_lockup()
+	_lockup.texture = lockup
+	_lockup.visible = lockup != null
+
+	# Only reachable if the brand images have been deleted from the repo.
+	_fallback.visible = lockup == null
+	if lockup == null:
+		_fallback_logo.texture = PlaceholderFactory.build_mascot_portrait(220)
 
 	_hand_over()
 

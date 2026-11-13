@@ -20,7 +20,13 @@ enum State { EMPTY, SEEDED, GROWING, READY, HARVESTED }
 ## straight calculation: a plot needs 1.45 units of width and 1.5 of depth to
 ## clear 120px, and 0.55 of clearance to keep 40px from its neighbour.
 ## tools/kebun_test.tscn measures the real projection and fails if this drifts.
-const DROP_ZONE_SIZE := Vector3(1.45, 0.3, 1.5)
+## Taller than the bed it sits over. A release is resolved by a raycast from the
+## camera into the drop-zone layer, so the box's *screen* area is what a child's
+## thumb actually has to hit — and under a camera that now looks along the ground
+## rather than down at it, a box 30cm high projects to barely eighty pixels of
+## height. Raising it costs nothing underfoot and is what puts the plots back
+## over the §3.3 minimum.
+const DROP_ZONE_SIZE := Vector3(1.45, 0.7, 1.5)
 const HARVEST_TOUCH_SIZE := Vector3(1.4, 0.5, 1.45)
 const SOIL_SIZE := Vector3(1.4, 0.18, 1.45)
 

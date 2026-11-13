@@ -87,16 +87,26 @@ func _process(delta: float) -> void:
 
 ## The real model if data/minigames.json names one that exists, otherwise the
 ## generated box-and-prism stand-in. Same two-tier arrangement the items use.
+## Three cases, and the difference between the first two matters.
+##
+## No model *named* means the building is part of the village mesh: it is already
+## on screen and there is nothing to instance. A placeholder box here would stand
+## inside the building the child can see.
+##
+## A model named but missing is the §10.5 case, and still gets its stand-in.
 func _build_structure() -> void:
 	var model_path: String = String(_config.get("model", ""))
-	if not model_path.is_empty():
-		var instance: Node3D = ModelKit.instantiate(model_path)
-		if instance != null:
-			instance.name = "Model"
-			add_child(instance)
-			_model = instance
-			_build_collider()
-			return
+	if model_path.is_empty():
+		_build_collider()
+		return
+
+	var instance: Node3D = ModelKit.instantiate(model_path)
+	if instance != null:
+		instance.name = "Model"
+		add_child(instance)
+		_model = instance
+		_build_collider()
+		return
 
 	_build_placeholder_structure()
 

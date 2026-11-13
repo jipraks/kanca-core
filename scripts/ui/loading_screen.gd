@@ -8,14 +8,16 @@ extends Control
 ## "something is happening, wait a moment" without a word.
 ##
 ## Content is built in code rather than laid out in the scene file because the
-## mascot here is a placeholder that will be replaced wholesale by the real
-## animated model (§11.1) — there is nothing worth hand-placing yet.
+## mascot here is still a still picture. When he is rigged (§11.1) this becomes
+## an AnimatedSprite or a subviewport of the model itself, and there is nothing
+## worth hand-placing until then.
 
 const DOT_COUNT := 3
 const DOT_SIZE := 28.0
 const DOT_SPACING := 46.0
 const BOUNCE_HEIGHT := 26.0
 const BOUNCE_SECONDS := 0.55
+const MASCOT_HEIGHT := 260
 
 var _mascot: TextureRect = null
 var _dots: Array[TextureRect] = []
@@ -48,9 +50,12 @@ func _ready() -> void:
 	centre.add_child(column)
 
 	_mascot = TextureRect.new()
-	_mascot.name = "MascotPlaceholder"
-	_mascot.texture = PlaceholderFactory.build_swatch_icon("kanca", Palette.SIGNATURE, 160)
-	_mascot.custom_minimum_size = Vector2(160, 160)
+	_mascot.name = "Mascot"
+	_mascot.texture = PlaceholderFactory.build_mascot_portrait(MASCOT_HEIGHT)
+	# Sized by height, not by a square. Kanca is 2.4 heads tall and half as wide
+	# as he is high; a 160-square box that fitted the placeholder swatch exactly
+	# gives him 74 pixels of width and leaves him looking lost on the screen.
+	_mascot.custom_minimum_size = Vector2(MASCOT_HEIGHT * 0.6, MASCOT_HEIGHT)
 	_mascot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_mascot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_mascot.mouse_filter = Control.MOUSE_FILTER_IGNORE

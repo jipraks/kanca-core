@@ -21,12 +21,23 @@ const MODEL_DIR := "res://assets/models/environment/"
 ## Each entry: how many, how big, and how far from a path it has to stay.
 ## Grass dominates by an order of magnitude — it is the cheapest model here and
 ## the one that does the most, because it is what covers the seams.
+##
+## Grass is scattered short and thick rather than tall and sparse. It used to
+## reach three quarters of a metre at full scale, which is chest height on a
+## 1.15m child — so walking into a tuft swallowed the avatar's feet, and there
+## were few enough of them that each one read as an object rather than as
+## ground. Now the tallest is a third of a metre and there are twice as many, for
+## the same triangles: the tuft itself was rebuilt cheaper (build_scatter.py).
+##
+## The fern gave up the difference. It is two metres across and two hundred
+## triangles, and eight of them were buying less than the two hundred blades of
+## grass the same budget pays for.
 const KINDS: Array[Dictionary] = [
-	{"id": "grass_tuft", "count": 145, "scale": Vector2(1.05, 1.85), "clearance": 0.35,
+	{"id": "grass_tuft", "count": 300, "scale": Vector2(0.55, 1.05), "clearance": 0.35,
 		"near_edge": 0.0},
 	{"id": "bush", "count": 40, "scale": Vector2(0.75, 1.45), "clearance": 1.1,
 		"near_edge": 0.55},
-	{"id": "fern", "count": 24, "scale": Vector2(0.65, 1.15), "clearance": 1.0,
+	{"id": "fern", "count": 16, "scale": Vector2(0.55, 0.95), "clearance": 1.0,
 		"near_edge": 0.65},
 	{"id": "flower_red", "count": 18, "scale": Vector2(0.85, 1.35), "clearance": 0.7,
 		"near_edge": 0.0},
@@ -49,12 +60,20 @@ static func build(half_extent: float, fence_inset: float, plaza_centre: Vector2,
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
+	# Everything scattered here sits on the ground rather than at y=0. The ground
+	# rolls by a fifth of a metre and the collider under it does not, so a plant
+	# placed at zero is a plant buried to the shins on one side of the village and
+	# hovering on the other.
+	var ground: VillageGround.Sampler = VillageGround.Sampler.new(
+		plaza_centre, plaza_radius, paths, seed_value)
+
 	for kind: Dictionary in KINDS:
 		# A separate stream per type, so changing how many ferns there are does
 		# not reshuffle every bush in the village.
 		rng.seed = seed_value + hash(kind["id"])
 		var transforms: Array[Transform3D] = _place(
-			kind, half_extent, plaza_centre, plaza_radius, paths, blocked, rng, seed_value)
+			kind, half_extent, plaza_centre, plaza_radius, paths, blocked, rng,
+			seed_value, ground)
 		var node: MultiMeshInstance3D = _multi_mesh(
 			MODEL_DIR + "%s.glb" % kind["id"], transforms)
 		if node != null:
@@ -62,7 +81,7 @@ static func build(half_extent: float, fence_inset: float, plaza_centre: Vector2,
 			root.add_child(node)
 
 	var fence: MultiMeshInstance3D = _multi_mesh(FENCE_MODEL,
-		_fence_ring(half_extent - fence_inset))
+		_fence_ring(half_extent - fence_inset, ground))
 	if fence != null:
 		fence.name = "Fence"
 		root.add_child(fence)
@@ -72,7 +91,8 @@ static func build(half_extent: float, fence_inset: float, plaza_centre: Vector2,
 
 static func _place(kind: Dictionary, half_extent: float, plaza_centre: Vector2,
 		plaza_radius: float, paths: Array, blocked: Array,
-		rng: RandomNumberGenerator, seed_value: int) -> Array[Transform3D]:
+		rng: RandomNumberGenerator, seed_value: int,
+		ground: VillageGround.Sampler) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
 	var wanted: int = int(kind["count"])
 	var clearance: float = float(kind["clearance"])
@@ -112,7 +132,10 @@ static func _place(kind: Dictionary, half_extent: float, plaza_centre: Vector2,
 
 		var basis: Basis = Basis(Vector3.UP, rng.randf_range(0.0, TAU))
 		basis = basis.scaled(Vector3.ONE * rng.randf_range(scale_range.x, scale_range.y))
-		transforms.append(Transform3D(basis, Vector3(point.x, 0.0, point.y)))
+		# Sunk a centimetre. A plant whose base sits exactly on the surface shows
+		# a hairline of ground through the gap between its lowest facets.
+		transforms.append(Transform3D(basis,
+			Vector3(point.x, ground.height_at(point) - 0.01, point.y)))
 
 	return transforms
 
@@ -122,7 +145,7 @@ static func _place(kind: Dictionary, half_extent: float, plaza_centre: Vector2,
 ## `inset` comes from Hub.fence_line(), not from a number chosen here. The panels
 ## and the thing that stops the child have to be in the same place, and the
 ## surest way to get that is for neither to own the figure.
-static func _fence_ring(inset: float) -> Array[Transform3D]:
+static func _fence_ring(inset: float, ground: VillageGround.Sampler) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
 	var per_side: int = int(ceilf(inset * 2.0 / FENCE_PANEL))
 	var step: float = inset * 2.0 / float(per_side)
@@ -136,8 +159,11 @@ static func _fence_ring(inset: float) -> Array[Transform3D]:
 			var along: float = -inset + step * (float(index) + 0.5)
 			var local: Vector2 = Vector2(along, -inset)
 			var placed: Vector2 = local.rotated(turn)
+			# Sunk further than a plant is. A fence panel is a metre wide, so its
+			# feet straddle ground that is not level, and the post that ends up
+			# lowest is the one a child sees daylight under.
 			transforms.append(Transform3D(Basis(Vector3.UP, -turn),
-				Vector3(placed.x, 0.0, placed.y)))
+				Vector3(placed.x, ground.height_at(placed) - 0.06, placed.y)))
 
 	return transforms
 

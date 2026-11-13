@@ -80,6 +80,67 @@ func _run() -> void:
 
 ## The fence stops the child, and the trees do too (§7.1).
 ##
+## Do the legs actually swing?
+##
+## Worth a check of its own because the two ways this breaks are both silent. A
+## supplied model arrives with no separable legs and no skeleton, and `WalkCycle`
+## reports `has_legs() == false` and does nothing — the child crosses the village
+## skating, which is what happened. Or the skeleton is there but the bones are
+## named something else, and the same thing happens for a different reason.
+##
+## Advancing the cycle and looking at the pose is the only version of this that
+## cannot pass while the character stands still.
+func _check_the_legs_move() -> void:
+	var walk: WalkCycle = _hub._player._walk
+	if not _check("the child has legs to swing", walk != null and walk.has_legs(),
+			"WalkCycle found neither a skeleton nor leg nodes"):
+		return
+
+	var skeleton: Skeleton3D = _find_skeleton(_hub._player)
+	if not _check("the child's model is rigged", skeleton != null,
+			"no Skeleton3D under the player"):
+		return
+	var bone: int = skeleton.find_bone("leg_l")
+	if not _check("the rig has the bones WalkCycle looks for", bone >= 0,
+			"no leg_l; kanca_build.rig_legs names them leg_l and leg_r"):
+		return
+
+	# A quarter of a stride at walking pace, which is where the swing is widest.
+	var reach: float = 0.0
+	for _step: int in range(6):
+		walk.advance(1.0 / 60.0, 4.0)
+		reach = maxf(reach, _swing_of(skeleton, bone))
+	_check("walking swings the leg", reach > 0.15,
+		"widest swing was %.3f rad — the cycle ran and the bone did not move" % reach)
+
+	walk.advance(1.0, 0.0)
+	walk.advance(1.0, 0.0)
+	_check("standing still puts it back", _swing_of(skeleton, bone) < 0.08,
+		"the leg stayed out at %.3f rad" % _swing_of(skeleton, bone))
+
+
+## How far a bone is turned **from its rest**, in radians.
+##
+## Not the pose's own angle. A bone's pose in Godot is its whole local transform
+## and starts at the rest, so a leg bone pointing down reads as a half turn while
+## standing perfectly still — which is how the first version of this check passed
+## for the wrong reason and then failed for the right one.
+static func _swing_of(skeleton: Skeleton3D, bone: int) -> float:
+	var rest: Quaternion = skeleton.get_bone_rest(bone).basis.get_rotation_quaternion()
+	return absf((rest.inverse() * skeleton.get_bone_pose_rotation(bone)).get_angle())
+
+
+static func _find_skeleton(node: Node) -> Skeleton3D:
+	var skeleton: Skeleton3D = node as Skeleton3D
+	if skeleton != null:
+		return skeleton
+	for child: Node in node.get_children():
+		var found: Skeleton3D = _find_skeleton(child)
+		if found != null:
+			return found
+	return null
+
+
 ## §7.1 forbids invisible walls a child can walk into and get stuck against. The
 ## inverse is just as bad and is what this catches: scenery that looks solid and
 ## is not. A fence that can be walked through is not a boundary, it is a
@@ -89,25 +150,35 @@ func _check_the_world_is_solid() -> void:
 	var player: HubPlayer = _hub._player
 	var limit: float = _hub.fence_line()
 
-	# Counted against the trees that are actually there, not against a number
-	# written here. The scatter rejects any tree that would land on a path, a
-	# building or the child's starting spot, so how many get planted is not
-	# knowable from TREE_COUNT — and a test that hard-codes it passes for the
-	# wrong reason the day someone moves a building.
-	var trees: Node3D = _hub._world.get_node_or_null("Trees") as Node3D
-	var planted: int = 0
-	var trunks: int = 0
-	if trees != null:
-		for child: Node in trees.get_children():
-			if child is StaticBody3D:
-				trunks += 1
-			var multi: MultiMeshInstance3D = child as MultiMeshInstance3D
-			if multi != null and multi.multimesh != null:
-				planted += multi.multimesh.instance_count
+	# The village is one model now, so there is no scatter to count and no
+	# per-tree trunk collider to pair off. What replaces both is stronger: the
+	# thing the child walks on is the same mesh they are looking at, so scenery
+	# cannot be solid-looking and passable. That is worth asserting, because the
+	# cheap version of this — a flat box under a picture of a village — is
+	# exactly what it used to be and exactly what would creep back.
+	_check("the village model is in the scene",
+		_hub._world.get_node_or_null("Village") != null,
+		"nothing at World/Village; the hub drew an empty field")
 
-	_check("the village has trees in it", planted > 0, "none were planted")
-	_check("every planted tree has a trunk collider", trunks == planted,
-		"%d trees, %d trunk bodies" % [planted, trunks])
+	var ground: StaticBody3D = _hub._world.get_node_or_null("GroundBody") as StaticBody3D
+	var shape: Shape3D = null
+	if ground != null:
+		var collision: CollisionShape3D = ground.get_node_or_null("CollisionShape3D") 			as CollisionShape3D
+		if collision == null:
+			for child: Node in ground.get_children():
+				if child is CollisionShape3D:
+					collision = child as CollisionShape3D
+					break
+		shape = collision.shape if collision != null else null
+
+	var faces: PackedVector3Array = PackedVector3Array()
+	var trimesh: ConcavePolygonShape3D = shape as ConcavePolygonShape3D
+	if trimesh != null:
+		faces = trimesh.get_faces()
+	_check("the child walks on the village, not on a box under it",
+		faces.size() > 0, "ground collider is %s" % shape)
+
+	_check_the_legs_move()
 
 	# Walk at the fence for two seconds of game time and see where it stops.
 	player.warp_to(Vector2(0.0, limit - 3.0))

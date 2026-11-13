@@ -80,6 +80,7 @@ Everything is verifiable headlessly. No suite needs a device, a window or a huma
 | `tools/ui_smoke_test.tscn` | Every UI component, plus an automated audit of the §3.3 touch rules |
 | `tools/warung_test.tscn` | A full five-customer Warung session, right answers and wrong ones |
 | `tools/integration_test.tscn` | Boot to hub to mini-game and back, unlocking, progress across a restart |
+| `tools/check_branding.tscn` | Every brand image: sizes, the adaptive icon's safe zone, the 48×48 silhouette |
 
 Run one on its own to see every individual check:
 
@@ -92,6 +93,43 @@ The touch-target audits are the ones worth knowing about. PLAN.md §3.3 sets a
 every commit. Checking it by eye on a phone does not scale, so the UI suite walks
 each component and measures it, and the Warung suite projects the 3D shelf into
 screen space and measures that. Both have already caught real violations.
+
+### Brand tooling
+
+The app icon, the launcher icons, the boot splash and the store graphic are all
+rendered from the mascot model — nothing here is drawn by hand, so there is only
+ever one Kanca. Rebuild them in three commands:
+
+```powershell
+& "D:/Program Files/Blender/blender.exe" --background --factory-startup `
+  --python tools/blender/build_branding.py -- --out-dir assets/ui/brand
+```
+
+```powershell
+& $env:GODOT --headless --path . res://tools/build_brand_images.tscn
+```
+
+```powershell
+& $env:GODOT --headless --path . --import
+```
+
+The checker in the suite above measures what came out, and writes the icon at
+192, 96, 48 and 32 px to a strip whose path it prints. PLAN.md §11.1 asks for
+that 48px look explicitly, and it is worth taking.
+
+`export_presets.cfg` is not in the repository (it holds keystore paths), so the
+Android export needs these set by hand on a fresh clone:
+
+| Setting | Value |
+|---|---|
+| `launcher_icons/main_192x192` | `res://assets/ui/brand/launcher_192.png` |
+| `launcher_icons/adaptive_foreground_432x432` | `res://assets/ui/brand/adaptive_foreground_432.png` |
+| `launcher_icons/adaptive_background_432x432` | `res://assets/ui/brand/adaptive_background_432.png` |
+| `launcher_icons/adaptive_monochrome_432x432` | `res://assets/ui/brand/adaptive_monochrome_432.png` |
+| `splash_screen/icon` | `res://assets/ui/brand/adaptive_foreground_432.png` |
+| `splash_screen/branding_image` | `res://assets/ui/brand/wordmark_800.png` |
+| `splash_screen/background_color`, `screen/background_color` | `#FEE5AD` |
+| `exclude_filter` | `tools/*,store/*` |
 
 ### Voice tooling
 
@@ -121,7 +159,9 @@ scripts/      GDScript, mirroring the scene layout
   minigames/    One folder per mini-game
 data/         All game content as JSON — see PLAN.md §9
 assets/       Models, textures, audio, fonts, UI art (LFS)
+  ui/brand/     Icon, splash and wordmark — rendered from the mascot
 docs/         Dubbing script, art style, phase plan
+store/        Play Store listing art. In the repo, excluded from the app
 tools/        Developer-only scripts, never shipped
 ```
 
@@ -193,6 +233,14 @@ them**, and never let placeholder art drive a design decision (PLAN.md §11.1).
 Phases P0 through P4a are built and green (see [`docs/PHASES.md`](docs/PHASES.md)):
 the foundation, all five autoloads, the UI component set, the walkable village,
 the Warung at levels 1-3, and the Kebun with the first half of the economy chain.
+The identity half of P5 is in too — the app has its own icon, splash and
+wordmark, all photographed from the mascot rather than drawn next to him.
+
+Two art decisions were taken on 2026-08-31 and both are recorded in PLAN.md §16:
+the village and the mascot are both supplied models rather than generated at
+runtime. The second one departs from §11's texture rules and
+from CC0-only sourcing; [`ASSETS.md`](ASSETS.md) says what was repaired to make it
+usable and what it costs.
 
 A fresh save now plays through properly: the village sends a new player to the
 garden, what they grow lands in the inventory, that opens the Warung, and the
